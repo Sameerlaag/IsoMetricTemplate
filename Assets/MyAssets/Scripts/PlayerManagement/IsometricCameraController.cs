@@ -65,9 +65,9 @@ public class IsometricCameraController : MonoBehaviour
                 float snappedAngle = Mathf.Round(angle / 45f) * 45f;
                 
                 Vector3 snappedDir = new Vector3(
-                    Mathf.Sin(snappedAngle * Mathf.Deg2Rad), 
+                    Mathf.Sin(angle * Mathf.Deg2Rad), 
                     0f, 
-                    Mathf.Cos(snappedAngle * Mathf.Deg2Rad)
+                    Mathf.Cos(angle * Mathf.Deg2Rad)
                 );
 
                 _aimOffsetTarget = snappedDir * _aimOffsetDistance;
