@@ -15,7 +15,7 @@ public class InventoryManager : MonoBehaviour
     [SerializeField]
     private bool _allowMultipleStacks = true;
 
-    public Inventory PlayerInventory { get; private set; }
+    public PlayerInventory PlayerInventory { get; private set; }
 
     public bool AllowMultipleStacks => _allowMultipleStacks;
 
@@ -29,7 +29,7 @@ public class InventoryManager : MonoBehaviour
 
         Instance = this;
 
-        PlayerInventory = new Inventory(
+        PlayerInventory = new PlayerInventory(
             _capacity,
             _allowMultipleStacks
         );

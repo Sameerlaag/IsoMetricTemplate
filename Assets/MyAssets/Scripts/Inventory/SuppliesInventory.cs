@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-public class Inventory
+public class SuppliesInventory
 {
     private readonly int _capacity;
     private readonly bool _allowMultipleStacks;
@@ -18,7 +18,7 @@ public class Inventory
 
     public bool IsFull => _items.Count >= _capacity;
 
-    public Inventory(int capacity, bool allowMultipleStacks)
+    public SuppliesInventory(int capacity, bool allowMultipleStacks)
     {
         if (capacity <= 0)
             throw new ArgumentOutOfRangeException(nameof(capacity));

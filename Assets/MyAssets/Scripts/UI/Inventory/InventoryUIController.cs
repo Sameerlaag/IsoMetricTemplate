@@ -14,7 +14,7 @@ public class InventoryUIController : MonoBehaviour
 
     private readonly List<InventoryUIItem> _items = new();
 
-    private Inventory _inventory;
+    private SuppliesInventory _suppliesInventory;
 
     private InventoryUIItem _selectedItem;
 
@@ -33,15 +33,15 @@ public class InventoryUIController : MonoBehaviour
 
     private void Start()
     {
-        _inventory = InventoryManager.Instance.PlayerInventory;
+        _suppliesInventory = InventoryManager.Instance.PlayerInventory.Supplies;
 
-        _inventory.ItemAdded += AddItem;
-        _inventory.ItemChanged += UpdateItem;
-        _inventory.ItemRemoved += RemoveItem;
+        _suppliesInventory.ItemAdded += AddItem;
+        _suppliesInventory.ItemChanged += UpdateItem;
+        _suppliesInventory.ItemRemoved += RemoveItem;
 
         // Useful if the UI is created after the inventory already
         // contains items.
-        foreach (ItemInstance item in _inventory.Items)
+        foreach (ItemInstance item in _suppliesInventory.Items)
         {
             AddItem(item);
         }
@@ -49,12 +49,12 @@ public class InventoryUIController : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (_inventory == null)
+        if (_suppliesInventory == null)
             return;
 
-        _inventory.ItemAdded -= AddItem;
-        _inventory.ItemChanged -= UpdateItem;
-        _inventory.ItemRemoved -= RemoveItem;
+        _suppliesInventory.ItemAdded -= AddItem;
+        _suppliesInventory.ItemChanged -= UpdateItem;
+        _suppliesInventory.ItemRemoved -= RemoveItem;
     }
 
     public void AddItem(ItemInstance item)

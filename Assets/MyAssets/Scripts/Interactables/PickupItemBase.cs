@@ -20,7 +20,7 @@ public class PickupItem : MonoBehaviour, IInteractable
     public void Interact(GameObject interactor)
     {
         int pickedUp = InventoryManager.Instance
-            .PlayerInventory
+            .PlayerInventory.Supplies
             .TryAdd(_item);
         
         Debug.Log($"player picked up {pickedUp} of this item");
