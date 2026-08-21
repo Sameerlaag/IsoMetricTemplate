@@ -6,9 +6,11 @@ using UnityEngine.InputSystem;
 public class InputReader : ScriptableObject, PlayerActionsInputs.IPlayerActions
 {
     public Vector2 MoveInput { get; private set; }
+    
+    public Vector2 MousePosition { get; private set; }
     public bool IsSprinting { get; private set; }
     public bool IsCrouching { get; private set; }
-
+    public bool IsAiming { get; private set; }
     public event Action OnInteractPerformed;
     public event Action OnInteractStarted;
     public event Action OnInteractCanceled;
@@ -24,6 +26,9 @@ public class InputReader : ScriptableObject, PlayerActionsInputs.IPlayerActions
     public event Action OnReloadStarted;
     public event Action OnReloadCanceled;
 
+    public event Action OnAimStarted;
+    public event Action OnAimCanceled;
+    
     private PlayerActionsInputs _inputActions;
 
     private void OnEnable()
@@ -86,5 +91,24 @@ public class InputReader : ScriptableObject, PlayerActionsInputs.IPlayerActions
         if (context.performed) OnEquipedItemPerformed?.Invoke();
         else if (context.started) OnEquipedItemStarted?.Invoke();
         else if (context.canceled) OnEquipedItemCanceled?.Invoke();
+    }
+
+    public void OnAim(InputAction.CallbackContext context)
+    {
+        if (context.started)
+        {
+            IsAiming = true;
+            OnAimStarted?.Invoke();
+        }
+        else if (context.canceled)
+        {
+            IsAiming = false;
+            OnAimCanceled?.Invoke();
+        }
+    }
+
+    public void OnPoint(InputAction.CallbackContext context)
+    {
+        MousePosition = context.ReadValue<Vector2>();
     }
 }
