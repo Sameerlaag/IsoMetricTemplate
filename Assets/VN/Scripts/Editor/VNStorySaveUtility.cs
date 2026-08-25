@@ -25,6 +25,9 @@ namespace VN.Editor
                 case VNStoryNodeType.ClearCharacter: return new VNClearCharacterNodeView();
                 case VNStoryNodeType.SetBackground: return new VNSetBackgroundNodeView();
 
+                case VNStoryNodeType.PlayBGM: return new VNPlayBGMNodeView();
+                case VNStoryNodeType.PlaySFX: return new VNPlaySFXNodeView();
+
                 case VNStoryNodeType.SetFlag: return new VNSetFlagNodeView();
                 case VNStoryNodeType.FireEvent: return new VNFireEventNodeView();
 

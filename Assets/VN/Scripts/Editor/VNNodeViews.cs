@@ -92,7 +92,7 @@ namespace VN.Editor
 
             _posField = new EnumField("Position", VNCharacterPosition.Middle);
             _spriteField = new ObjectField("Sprite") { objectType = typeof(Sprite) };
-            _animFlagField = new TextField("Anim Flag");
+            _animFlagField = new TextField("Anim Flag (e.g. slow_fade_in)");
             _spriteFlagField = new TextField("Sprite Flag");
 
             mainContainer.Add(_posField);
@@ -124,6 +124,7 @@ namespace VN.Editor
     public class VNClearCharacterNodeView : VNStoryNodeView
     {
         private EnumField _posField;
+        private TextField _animFlagField;
 
         public VNClearCharacterNodeView() : base("Clear Character Position", ActionColor, VNStoryNodeType.ClearCharacter)
         {
@@ -131,13 +132,17 @@ namespace VN.Editor
             CreateOutputPort();
 
             _posField = new EnumField("Position", VNCharacterPosition.Middle);
+            _animFlagField = new TextField("Anim Flag (e.g. slow_fade_out)");
+
             mainContainer.Add(_posField);
+            mainContainer.Add(_animFlagField);
         }
 
         public override VNStoryNodeData ToData()
         {
             var d = base.ToData();
             d.position = (VNCharacterPosition)_posField.value;
+            d.animationFlag = _animFlagField.value;
             return d;
         }
 
@@ -145,6 +150,7 @@ namespace VN.Editor
         {
             base.LoadFromData(data);
             _posField.value = data.position;
+            _animFlagField.value = data.animationFlag;
         }
     }
 
@@ -152,6 +158,7 @@ namespace VN.Editor
     public class VNSetBackgroundNodeView : VNStoryNodeView
     {
         private ObjectField _bgField;
+        private TextField _animFlagField;
 
         public VNSetBackgroundNodeView() : base("Set Background", ActionColor, VNStoryNodeType.SetBackground)
         {
@@ -159,13 +166,17 @@ namespace VN.Editor
             CreateOutputPort();
 
             _bgField = new ObjectField("Background") { objectType = typeof(Sprite) };
+            _animFlagField = new TextField("Anim Flag (e.g. slow_fade_in)");
+
             mainContainer.Add(_bgField);
+            mainContainer.Add(_animFlagField);
         }
 
         public override VNStoryNodeData ToData()
         {
             var d = base.ToData();
             d.backgroundSprite = (Sprite)_bgField.value;
+            d.backgroundAnimFlag = _animFlagField.value;
             return d;
         }
 
@@ -173,6 +184,62 @@ namespace VN.Editor
         {
             base.LoadFromData(data);
             _bgField.value = data.backgroundSprite;
+            _animFlagField.value = data.backgroundAnimFlag;
+        }
+    }
+
+    // Audio Nodes
+    public class VNPlayBGMNodeView : VNStoryNodeView
+    {
+        private ObjectField _clipField;
+
+        public VNPlayBGMNodeView() : base("Play BGM", ActionColor, VNStoryNodeType.PlayBGM)
+        {
+            CreateInputPort();
+            CreateOutputPort();
+
+            _clipField = new ObjectField("BGM Clip") { objectType = typeof(AudioClip) };
+            mainContainer.Add(_clipField);
+        }
+
+        public override VNStoryNodeData ToData()
+        {
+            var d = base.ToData();
+            d.audioClip = (AudioClip)_clipField.value;
+            return d;
+        }
+
+        public override void LoadFromData(VNStoryNodeData data)
+        {
+            base.LoadFromData(data);
+            _clipField.value = data.audioClip;
+        }
+    }
+
+    public class VNPlaySFXNodeView : VNStoryNodeView
+    {
+        private ObjectField _clipField;
+
+        public VNPlaySFXNodeView() : base("Play SFX", ActionColor, VNStoryNodeType.PlaySFX)
+        {
+            CreateInputPort();
+            CreateOutputPort();
+
+            _clipField = new ObjectField("SFX Clip") { objectType = typeof(AudioClip) };
+            mainContainer.Add(_clipField);
+        }
+
+        public override VNStoryNodeData ToData()
+        {
+            var d = base.ToData();
+            d.audioClip = (AudioClip)_clipField.value;
+            return d;
+        }
+
+        public override void LoadFromData(VNStoryNodeData data)
+        {
+            base.LoadFromData(data);
+            _clipField.value = data.audioClip;
         }
     }
 
@@ -241,6 +308,7 @@ namespace VN.Editor
     {
         private TextField _speakerField;
         private TextField _dialogueField;
+        private ObjectField _audioField;
 
         public VNPlayDialogueNodeView() : base("Play Dialogue", DialogueColor, VNStoryNodeType.PlayDialogue)
         {
@@ -250,9 +318,11 @@ namespace VN.Editor
             _speakerField = new TextField("Speaker");
             _dialogueField = new TextField("Dialogue") { multiline = true };
             _dialogueField.style.height = 60;
+            _audioField = new ObjectField("Audio Cue") { objectType = typeof(AudioClip) };
 
             mainContainer.Add(_speakerField);
             mainContainer.Add(_dialogueField);
+            mainContainer.Add(_audioField);
         }
 
         public override VNStoryNodeData ToData()
@@ -260,6 +330,7 @@ namespace VN.Editor
             var d = base.ToData();
             d.speakerName = _speakerField.value;
             d.dialogueText = _dialogueField.value;
+            d.dialogueAudio = (AudioClip)_audioField.value;
             return d;
         }
 
@@ -268,6 +339,7 @@ namespace VN.Editor
             base.LoadFromData(data);
             _speakerField.value = data.speakerName;
             _dialogueField.value = data.dialogueText;
+            _audioField.value = data.dialogueAudio;
         }
     }
 
@@ -284,7 +356,6 @@ namespace VN.Editor
             _choicesContainer = new VisualElement();
             mainContainer.Add(_choicesContainer);
 
-            // FIX: Pass explicit parameterless lambda to match System.Action
             var addBtn = new Button(() => AddChoiceOption()) { text = "+ Add Choice Option" };
             mainContainer.Add(addBtn);
 

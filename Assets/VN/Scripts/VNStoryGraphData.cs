@@ -1,8 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace VN
-{
+
     public enum VNCharacterPosition
     {
         Left,
@@ -28,6 +27,10 @@ namespace VN
         SetBackground,
         SetFlag,
         FireEvent,
+
+        // Audio
+        PlayBGM,
+        PlaySFX,
 
         // Dialogue & Choices
         PlayDialogue,
@@ -58,19 +61,24 @@ namespace VN
         public string characterId;
         public VNCharacterPosition position;
         public Sprite characterSprite;
-        public string animationFlag;
+        public string animationFlag; // e.g. "slow_fade_in", "slow_fade_out", "fast_fade_in"
         public string spriteFlag;
 
         public Sprite backgroundSprite;
+        public string backgroundAnimFlag; // e.g. "slow_fade_in", "slow_fade_out"
 
         public string setFlagKey;
         public bool removeFlag;
         public string eventKey;
 
+        // Audio
+        public AudioClip audioClip;
+
         // Dialogue
         public string speakerName;
         [TextArea(3, 5)]
         public string dialogueText;
+        public AudioClip dialogueAudio;
 
         // Choices
         public List<VNChoiceOption> choices = new List<VNChoiceOption>();
@@ -108,4 +116,4 @@ namespace VN
             return result;
         }
     }
-}
+

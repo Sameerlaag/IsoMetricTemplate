@@ -35,6 +35,10 @@ namespace VN
 
                 btn.onClick.AddListener(() =>
                 {
+                    if (VNAudioManager.Instance != null)
+                    {
+                        VNAudioManager.Instance.PlayDefaultClickSFX();
+                    }
                     Hide();
                     onChoiceSelected?.Invoke(choiceIndex, choice.targetNodeId);
                 });

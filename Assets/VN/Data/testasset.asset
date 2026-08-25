@@ -1,0 +1,164 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c3bfb645c2e9cc840a858cb0b462aa72, type: 3}
+  m_Name: testasset
+  m_EditorClassIdentifier: Assembly-CSharp::VN.VNStoryGraphData
+  graphName: 
+  nodes:
+  - id: a77bc0ce-3df3-4d2b-aa91-910eeb0e41a8
+    type: 0
+    posX: 202
+    posY: 230
+    triggerKey: 
+    flagKey: 
+    invertFlag: 0
+    characterId: 
+    position: 0
+    characterSprite: {fileID: 0}
+    animationFlag: 
+    spriteFlag: 
+    backgroundSprite: {fileID: 0}
+    backgroundAnimFlag: 
+    setFlagKey: 
+    removeFlag: 0
+    eventKey: 
+    audioClip: {fileID: 0}
+    speakerName: 
+    dialogueText: 
+    dialogueAudio: {fileID: 0}
+    choices: []
+  - id: 3a181707-7475-4f43-8c55-bd47965ef930
+    type: 8
+    posX: 552
+    posY: 230
+    triggerKey: 
+    flagKey: 
+    invertFlag: 0
+    characterId: 
+    position: 0
+    characterSprite: {fileID: 0}
+    animationFlag: 
+    spriteFlag: 
+    backgroundSprite: {fileID: 21300000, guid: bdcb966372d0f5c4a95e3b18854d4c15, type: 3}
+    backgroundAnimFlag: slow_fade_in
+    setFlagKey: 
+    removeFlag: 0
+    eventKey: 
+    audioClip: {fileID: 0}
+    speakerName: 
+    dialogueText: 
+    dialogueAudio: {fileID: 0}
+    choices: []
+  - id: aa3ae18f-c113-47e9-bd39-69c677750b1b
+    type: 5
+    posX: 890
+    posY: 250
+    triggerKey: 
+    flagKey: 
+    invertFlag: 0
+    characterId: 
+    position: 0
+    characterSprite: {fileID: 21300000, guid: c4c6d2568b75a7b4fb2096fd946cb498, type: 3}
+    animationFlag: slow_fade_in
+    spriteFlag: 
+    backgroundSprite: {fileID: 0}
+    backgroundAnimFlag: 
+    setFlagKey: 
+    removeFlag: 0
+    eventKey: 
+    audioClip: {fileID: 0}
+    speakerName: 
+    dialogueText: 
+    dialogueAudio: {fileID: 0}
+    choices: []
+  - id: b69a080e-638e-4899-957b-48046f647c69
+    type: 13
+    posX: 1201
+    posY: 318
+    triggerKey: 
+    flagKey: 
+    invertFlag: 0
+    characterId: 
+    position: 0
+    characterSprite: {fileID: 0}
+    animationFlag: 
+    spriteFlag: 
+    backgroundSprite: {fileID: 0}
+    backgroundAnimFlag: 
+    setFlagKey: 
+    removeFlag: 0
+    eventKey: 
+    audioClip: {fileID: 0}
+    speakerName: Lei
+    dialogueText: Sup my nigga
+    dialogueAudio: {fileID: 0}
+    choices: []
+  - id: 4c9a2eaf-734a-494e-ab7f-4d9973c30794
+    type: 5
+    posX: 1566
+    posY: 355
+    triggerKey: 
+    flagKey: 
+    invertFlag: 0
+    characterId: 
+    position: 2
+    characterSprite: {fileID: 21300000, guid: c06182098d39d114daca8f84156f2fa2, type: 3}
+    animationFlag: slow_fade_in
+    spriteFlag: 
+    backgroundSprite: {fileID: 0}
+    backgroundAnimFlag: 
+    setFlagKey: 
+    removeFlag: 0
+    eventKey: 
+    audioClip: {fileID: 0}
+    speakerName: 
+    dialogueText: 
+    dialogueAudio: {fileID: 0}
+    choices: []
+  - id: d121b5e2-c3dc-41ce-aa5a-4b741aa13c11
+    type: 13
+    posX: 1914
+    posY: 391
+    triggerKey: 
+    flagKey: 
+    invertFlag: 0
+    characterId: 
+    position: 0
+    characterSprite: {fileID: 0}
+    animationFlag: 
+    spriteFlag: 
+    backgroundSprite: {fileID: 0}
+    backgroundAnimFlag: 
+    setFlagKey: 
+    removeFlag: 0
+    eventKey: 
+    audioClip: {fileID: 0}
+    speakerName: Dan
+    dialogueText: What up hoe ?
+    dialogueAudio: {fileID: 0}
+    choices: []
+  links:
+  - sourceNodeId: a77bc0ce-3df3-4d2b-aa91-910eeb0e41a8
+    portIndex: 0
+    targetNodeId: 3a181707-7475-4f43-8c55-bd47965ef930
+  - sourceNodeId: 3a181707-7475-4f43-8c55-bd47965ef930
+    portIndex: 0
+    targetNodeId: aa3ae18f-c113-47e9-bd39-69c677750b1b
+  - sourceNodeId: aa3ae18f-c113-47e9-bd39-69c677750b1b
+    portIndex: 0
+    targetNodeId: b69a080e-638e-4899-957b-48046f647c69
+  - sourceNodeId: 4c9a2eaf-734a-494e-ab7f-4d9973c30794
+    portIndex: 0
+    targetNodeId: d121b5e2-c3dc-41ce-aa5a-4b741aa13c11
+  - sourceNodeId: b69a080e-638e-4899-957b-48046f647c69
+    portIndex: 0
+    targetNodeId: 4c9a2eaf-734a-494e-ab7f-4d9973c30794

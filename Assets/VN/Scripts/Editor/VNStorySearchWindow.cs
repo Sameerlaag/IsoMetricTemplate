@@ -34,6 +34,10 @@ namespace VN.Editor
                 new SearchTreeEntry(new GUIContent("Set / Remove Flag")) { level = 2, userData = VNStoryNodeType.SetFlag },
                 new SearchTreeEntry(new GUIContent("Fire Event")) { level = 2, userData = VNStoryNodeType.FireEvent },
 
+                new SearchTreeGroupEntry(new GUIContent("Audio"), 1),
+                new SearchTreeEntry(new GUIContent("Play BGM")) { level = 2, userData = VNStoryNodeType.PlayBGM },
+                new SearchTreeEntry(new GUIContent("Play SFX")) { level = 2, userData = VNStoryNodeType.PlaySFX },
+
                 new SearchTreeGroupEntry(new GUIContent("Dialogue & Choices"), 1),
                 new SearchTreeEntry(new GUIContent("Play Dialogue")) { level = 2, userData = VNStoryNodeType.PlayDialogue },
                 new SearchTreeEntry(new GUIContent("Play Choices")) { level = 2, userData = VNStoryNodeType.PlayChoices }
