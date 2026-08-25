@@ -1,6 +1,6 @@
 using UnityEngine;
 
-[RequireComponent(typeof(CharacterController))]
+[RequireComponent(typeof(UnityEngine.CharacterController))]
 public class PlayerController : MonoBehaviour
 {
     public enum MovementState { Normal, Aiming }
@@ -27,7 +27,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float _gravity = -19.62f;
     [SerializeField] private LayerMask _aimRaycastMask = ~0;
 
-    private CharacterController _characterController;
+    private UnityEngine.CharacterController _characterController;
     private Vector3 _currentVelocity;
     private Vector3 _lastDirection;
     private float _currentSpeed;
@@ -43,7 +43,7 @@ public class PlayerController : MonoBehaviour
 
     private void Awake()
     {
-        _characterController = GetComponent<CharacterController>();
+        _characterController = GetComponent<UnityEngine.CharacterController>();
         if (_mainCamera == null) _mainCamera = Camera.main;
     }
 
