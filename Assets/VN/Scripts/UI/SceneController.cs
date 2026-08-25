@@ -1,8 +1,10 @@
+using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
-
+namespace VN
+{
     public class SceneController : MonoBehaviour
     {
         [SerializeField] private CharacterController[] _characterSlots;
@@ -11,9 +13,13 @@ using UnityEngine.UI;
 
         private Coroutine _bgFadeCoroutine;
 
-        public void SetBackground(Sprite bgSprite, string animFlag)
+        public void SetBackground(Sprite bgSprite, string animFlag, bool allowSkip, Action onComplete)
         {
-            if (_backgroundImage == null) return;
+            if (_backgroundImage == null)
+            {
+                onComplete?.Invoke();
+                return;
+            }
 
             if (_bgFadeCoroutine != null) StopCoroutine(_bgFadeCoroutine);
 
@@ -22,6 +28,7 @@ using UnityEngine.UI;
             if (bgSprite == null)
             {
                 _backgroundImage.enabled = false;
+                onComplete?.Invoke();
                 return;
             }
 
@@ -30,31 +37,40 @@ using UnityEngine.UI;
             if (!string.IsNullOrEmpty(animFlag) && animFlag.Contains("fade_in"))
             {
                 float duration = GetDurationFromFlag(animFlag);
-                _bgFadeCoroutine = StartCoroutine(FadeRoutine(0f, 1f, duration));
+                _bgFadeCoroutine = StartCoroutine(FadeRoutine(0f, 1f, duration, allowSkip, onComplete));
             }
             else
             {
                 Color c = _backgroundImage.color;
                 c.a = 1f;
                 _backgroundImage.color = c;
+                onComplete?.Invoke();
             }
         }
 
-        public void SetCharacterSprite(VNCharacterPosition position, Sprite sprite, string animFlag)
+        public void SetCharacterSprite(VNCharacterPosition position, Sprite sprite, string animFlag, bool allowSkip, Action onComplete)
         {
             CharacterController slot = GetSlotAtPosition(position);
             if (slot != null)
             {
-                slot.SetSprite(sprite, animFlag);
+                slot.SetSprite(sprite, animFlag, allowSkip, onComplete);
+            }
+            else
+            {
+                onComplete?.Invoke();
             }
         }
 
-        public void ClearCharacterSlot(VNCharacterPosition position, string animFlag)
+        public void ClearCharacterSlot(VNCharacterPosition position, string animFlag, bool allowSkip, Action onComplete)
         {
             CharacterController slot = GetSlotAtPosition(position);
             if (slot != null)
             {
-                slot.Clear(animFlag);
+                slot.Clear(animFlag, allowSkip, onComplete);
+            }
+            else
+            {
+                onComplete?.Invoke();
             }
         }
 
@@ -79,13 +95,19 @@ using UnityEngine.UI;
             return _config.normalFadeDuration;
         }
 
-        private IEnumerator FadeRoutine(float startAlpha, float endAlpha, float duration)
+        private IEnumerator FadeRoutine(float startAlpha, float endAlpha, float duration, bool allowSkip, Action onComplete)
         {
             float elapsed = 0f;
             Color c = _backgroundImage.color;
 
             while (elapsed < duration)
             {
+                if (allowSkip && (Input.GetMouseButtonDown(0) || Input.GetKeyDown(KeyCode.Space)))
+                {
+                    Debug.Log("[SceneController] Skipping background fade animation.");
+                    break;
+                }
+
                 elapsed += Time.deltaTime;
                 c.a = Mathf.Lerp(startAlpha, endAlpha, elapsed / duration);
                 _backgroundImage.color = c;
@@ -94,5 +116,7 @@ using UnityEngine.UI;
 
             c.a = endAlpha;
             _backgroundImage.color = c;
+            onComplete?.Invoke();
         }
     }
+}

@@ -14,6 +14,7 @@ namespace VN.Editor
             switch (type)
             {
                 case VNStoryNodeType.Start: return new VNStartNodeView();
+                case VNStoryNodeType.Wait: return new VNWaitNodeView();
                 case VNStoryNodeType.PhaseTrigger: return new VNTriggerNodeView("Phase Trigger", type);
                 case VNStoryNodeType.FlagTrigger: return new VNTriggerNodeView("Flag Trigger", type);
                 case VNStoryNodeType.EventTrigger: return new VNTriggerNodeView("Event Trigger", type);

@@ -1,3 +1,5 @@
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -140,6 +142,11 @@ namespace VN
                     ContinueNextNode(0);
                     break;
 
+                case VNStoryNodeType.Wait:
+                    Debug.Log($"[VNStoryDirector] Wait node -> duration: {node.waitDuration}s, allowSkip: {node.allowSkipAnimation}");
+                    StartCoroutine(WaitRoutine(node.waitDuration, node.allowSkipAnimation, () => ContinueNextNode(0)));
+                    break;
+
                 case VNStoryNodeType.CheckFlag:
                     bool has = HasFlag(node.flagKey);
                     bool condition = node.invertFlag ? !has : has;
@@ -149,43 +156,68 @@ namespace VN
 
                 case VNStoryNodeType.SetCharacterSprite:
                 case VNStoryNodeType.SetCharacterPosition:
+                    if (!string.IsNullOrEmpty(node.spriteFlag)) SetFlag(node.spriteFlag);
+
                     if (_activeSceneController != null)
                     {
-                        Debug.Log($"[VNStoryDirector] SetCharacterSprite pos: {node.position}, sprite: {node.characterSprite?.name ?? "null"}, animFlag: {node.animationFlag}");
-                        _activeSceneController.SetCharacterSprite(node.position, node.characterSprite, node.animationFlag);
+                        Debug.Log($"[VNStoryDirector] SetCharacterSprite pos: {node.position}, sprite: {node.characterSprite?.name ?? "null"}, animFlag: {node.animationFlag}, waitForCompletion: {node.waitForCompletion}, allowSkip: {node.allowSkipAnimation}");
+                        if (node.waitForCompletion)
+                        {
+                            _activeSceneController.SetCharacterSprite(node.position, node.characterSprite, node.animationFlag, node.allowSkipAnimation, () => ContinueNextNode(0));
+                        }
+                        else
+                        {
+                            _activeSceneController.SetCharacterSprite(node.position, node.characterSprite, node.animationFlag, node.allowSkipAnimation, null);
+                            ContinueNextNode(0);
+                        }
                     }
                     else
                     {
                         Debug.LogWarning("[VNStoryDirector] _activeSceneController is unassigned in Inspector!");
+                        ContinueNextNode(0);
                     }
-                    if (!string.IsNullOrEmpty(node.spriteFlag)) SetFlag(node.spriteFlag);
-                    ContinueNextNode(0);
                     break;
 
                 case VNStoryNodeType.ClearCharacter:
                     if (_activeSceneController != null)
                     {
-                        Debug.Log($"[VNStoryDirector] ClearCharacter pos: {node.position}, animFlag: {node.animationFlag}");
-                        _activeSceneController.ClearCharacterSlot(node.position, node.animationFlag);
+                        Debug.Log($"[VNStoryDirector] ClearCharacter pos: {node.position}, animFlag: {node.animationFlag}, waitForCompletion: {node.waitForCompletion}, allowSkip: {node.allowSkipAnimation}");
+                        if (node.waitForCompletion)
+                        {
+                            _activeSceneController.ClearCharacterSlot(node.position, node.animationFlag, node.allowSkipAnimation, () => ContinueNextNode(0));
+                        }
+                        else
+                        {
+                            _activeSceneController.ClearCharacterSlot(node.position, node.animationFlag, node.allowSkipAnimation, null);
+                            ContinueNextNode(0);
+                        }
                     }
                     else
                     {
                         Debug.LogWarning("[VNStoryDirector] _activeSceneController is unassigned in Inspector!");
+                        ContinueNextNode(0);
                     }
-                    ContinueNextNode(0);
                     break;
 
                 case VNStoryNodeType.SetBackground:
                     if (_activeSceneController != null)
                     {
-                        Debug.Log($"[VNStoryDirector] SetBackground sprite: {node.backgroundSprite?.name ?? "null"}, animFlag: {node.backgroundAnimFlag}");
-                        _activeSceneController.SetBackground(node.backgroundSprite, node.backgroundAnimFlag);
+                        Debug.Log($"[VNStoryDirector] SetBackground sprite: {node.backgroundSprite?.name ?? "null"}, animFlag: {node.backgroundAnimFlag}, waitForCompletion: {node.waitForCompletion}, allowSkip: {node.allowSkipAnimation}");
+                        if (node.waitForCompletion)
+                        {
+                            _activeSceneController.SetBackground(node.backgroundSprite, node.backgroundAnimFlag, node.allowSkipAnimation, () => ContinueNextNode(0));
+                        }
+                        else
+                        {
+                            _activeSceneController.SetBackground(node.backgroundSprite, node.backgroundAnimFlag, node.allowSkipAnimation, null);
+                            ContinueNextNode(0);
+                        }
                     }
                     else
                     {
                         Debug.LogWarning("[VNStoryDirector] _activeSceneController is unassigned in Inspector!");
+                        ContinueNextNode(0);
                     }
-                    ContinueNextNode(0);
                     break;
 
                 case VNStoryNodeType.PlayBGM:
@@ -268,6 +300,22 @@ namespace VN
                     ContinueNextNode(0);
                     break;
             }
+        }
+
+        private IEnumerator WaitRoutine(float duration, bool allowSkip, Action onComplete)
+        {
+            float elapsed = 0f;
+            while (elapsed < duration)
+            {
+                if (allowSkip && (Input.GetMouseButtonDown(0) || Input.GetKeyDown(KeyCode.Space)))
+                {
+                    Debug.Log("[VNStoryDirector] Skipping wait timer.");
+                    break;
+                }
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+            onComplete?.Invoke();
         }
 
         private void ContinueNextNode(int portIndex)

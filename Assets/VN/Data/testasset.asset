@@ -18,6 +18,9 @@ MonoBehaviour:
     type: 0
     posX: 202
     posY: 230
+    waitForCompletion: 1
+    allowSkipAnimation: 0
+    waitDuration: 1
     triggerKey: 
     flagKey: 
     invertFlag: 0
@@ -36,10 +39,13 @@ MonoBehaviour:
     dialogueText: 
     dialogueAudio: {fileID: 0}
     choices: []
-  - id: 3a181707-7475-4f43-8c55-bd47965ef930
-    type: 8
-    posX: 552
-    posY: 230
+  - id: 7c1b24e2-b7ff-4dc3-b2c1-71c0c175707d
+    type: 9
+    posX: 518
+    posY: 231
+    waitForCompletion: 1
+    allowSkipAnimation: 0
+    waitDuration: 1
     triggerKey: 
     flagKey: 
     invertFlag: 0
@@ -49,7 +55,7 @@ MonoBehaviour:
     animationFlag: 
     spriteFlag: 
     backgroundSprite: {fileID: 21300000, guid: bdcb966372d0f5c4a95e3b18854d4c15, type: 3}
-    backgroundAnimFlag: slow_fade_in
+    backgroundAnimFlag: 
     setFlagKey: 
     removeFlag: 0
     eventKey: 
@@ -58,17 +64,20 @@ MonoBehaviour:
     dialogueText: 
     dialogueAudio: {fileID: 0}
     choices: []
-  - id: aa3ae18f-c113-47e9-bd39-69c677750b1b
-    type: 5
-    posX: 890
-    posY: 250
+  - id: ea112437-18bc-4fd2-a3fa-57f56ceded8b
+    type: 6
+    posX: 853
+    posY: 272
+    waitForCompletion: 1
+    allowSkipAnimation: 0
+    waitDuration: 1
     triggerKey: 
     flagKey: 
     invertFlag: 0
     characterId: 
     position: 0
     characterSprite: {fileID: 21300000, guid: c4c6d2568b75a7b4fb2096fd946cb498, type: 3}
-    animationFlag: slow_fade_in
+    animationFlag: 
     spriteFlag: 
     backgroundSprite: {fileID: 0}
     backgroundAnimFlag: 
@@ -80,10 +89,13 @@ MonoBehaviour:
     dialogueText: 
     dialogueAudio: {fileID: 0}
     choices: []
-  - id: b69a080e-638e-4899-957b-48046f647c69
-    type: 13
-    posX: 1201
-    posY: 318
+  - id: 4610fa7d-0315-4ad2-aadb-74bb491d6a6f
+    type: 14
+    posX: 1204
+    posY: 352
+    waitForCompletion: 1
+    allowSkipAnimation: 0
+    waitDuration: 1
     triggerKey: 
     flagKey: 
     invertFlag: 0
@@ -99,20 +111,23 @@ MonoBehaviour:
     eventKey: 
     audioClip: {fileID: 0}
     speakerName: Lei
-    dialogueText: Sup my nigga
+    dialogueText: Dan ! Are you there ?
     dialogueAudio: {fileID: 0}
     choices: []
-  - id: 4c9a2eaf-734a-494e-ab7f-4d9973c30794
-    type: 5
-    posX: 1566
-    posY: 355
+  - id: 1256b5a1-5626-4858-8b0b-79b2fd03c2cc
+    type: 4
+    posX: 724
+    posY: 519
+    waitForCompletion: 1
+    allowSkipAnimation: 0
+    waitDuration: 1
     triggerKey: 
     flagKey: 
     invertFlag: 0
     characterId: 
-    position: 2
-    characterSprite: {fileID: 21300000, guid: c06182098d39d114daca8f84156f2fa2, type: 3}
-    animationFlag: slow_fade_in
+    position: 0
+    characterSprite: {fileID: 0}
+    animationFlag: 
     spriteFlag: 
     backgroundSprite: {fileID: 0}
     backgroundAnimFlag: 
@@ -124,10 +139,38 @@ MonoBehaviour:
     dialogueText: 
     dialogueAudio: {fileID: 0}
     choices: []
-  - id: d121b5e2-c3dc-41ce-aa5a-4b741aa13c11
-    type: 13
-    posX: 1914
-    posY: 391
+  - id: bd9d23d7-8793-45d4-8a4e-7253d9ee2706
+    type: 6
+    posX: 271
+    posY: 659
+    waitForCompletion: 1
+    allowSkipAnimation: 0
+    waitDuration: 1
+    triggerKey: 
+    flagKey: 
+    invertFlag: 0
+    characterId: 
+    position: 2
+    characterSprite: {fileID: 21300000, guid: 0c13423fa72174348954077a0a236982, type: 3}
+    animationFlag: 
+    spriteFlag: 
+    backgroundSprite: {fileID: 0}
+    backgroundAnimFlag: 
+    setFlagKey: 
+    removeFlag: 0
+    eventKey: 
+    audioClip: {fileID: 0}
+    speakerName: 
+    dialogueText: 
+    dialogueAudio: {fileID: 0}
+    choices: []
+  - id: 20991fea-57cb-4612-8a9d-6b7a65020297
+    type: 14
+    posX: 696
+    posY: 738
+    waitForCompletion: 1
+    allowSkipAnimation: 0
+    waitDuration: 1
     triggerKey: 
     flagKey: 
     invertFlag: 0
@@ -143,22 +186,197 @@ MonoBehaviour:
     eventKey: 
     audioClip: {fileID: 0}
     speakerName: Dan
-    dialogueText: What up hoe ?
+    dialogueText: I am my darling, are you in need of help ?
+    dialogueAudio: {fileID: 0}
+    choices: []
+  - id: c0ccba94-d080-4d93-adb6-0dec8f1b2c8d
+    type: 15
+    posX: 1041
+    posY: 713
+    waitForCompletion: 1
+    allowSkipAnimation: 0
+    waitDuration: 1
+    triggerKey: 
+    flagKey: 
+    invertFlag: 0
+    characterId: 
+    position: 0
+    characterSprite: {fileID: 0}
+    animationFlag: 
+    spriteFlag: 
+    backgroundSprite: {fileID: 0}
+    backgroundAnimFlag: 
+    setFlagKey: 
+    removeFlag: 0
+    eventKey: 
+    audioClip: {fileID: 0}
+    speakerName: 
+    dialogueText: 
+    dialogueAudio: {fileID: 0}
+    choices:
+    - choiceText: I need puss puss
+      targetNodeId: 
+    - choiceText: Blow my hard veined cock
+      targetNodeId: 
+  - id: bbee71ab-ffd1-477c-92c3-f84cb38da7c7
+    type: 6
+    posX: 1390
+    posY: 659
+    waitForCompletion: 0
+    allowSkipAnimation: 1
+    waitDuration: 1
+    triggerKey: 
+    flagKey: 
+    invertFlag: 0
+    characterId: 
+    position: 0
+    characterSprite: {fileID: 21300000, guid: ccfb203e9d1726f4b87c663daf228701, type: 3}
+    animationFlag: 
+    spriteFlag: 
+    backgroundSprite: {fileID: 0}
+    backgroundAnimFlag: 
+    setFlagKey: 
+    removeFlag: 0
+    eventKey: 
+    audioClip: {fileID: 0}
+    speakerName: 
+    dialogueText: 
+    dialogueAudio: {fileID: 0}
+    choices: []
+  - id: a91c6c42-6785-4a68-bc2c-4344c3b80fc1
+    type: 6
+    posX: 1414
+    posY: 900
+    waitForCompletion: 0
+    allowSkipAnimation: 1
+    waitDuration: 1
+    triggerKey: 
+    flagKey: 
+    invertFlag: 0
+    characterId: 
+    position: 0
+    characterSprite: {fileID: 21300000, guid: 4f1a3d8ae00183f4fa82c84d502f66fe, type: 3}
+    animationFlag: 
+    spriteFlag: 
+    backgroundSprite: {fileID: 0}
+    backgroundAnimFlag: 
+    setFlagKey: 
+    removeFlag: 0
+    eventKey: 
+    audioClip: {fileID: 0}
+    speakerName: 
+    dialogueText: 
+    dialogueAudio: {fileID: 0}
+    choices: []
+  - id: 4e74c8a0-88dd-4c3f-a73e-479795831c74
+    type: 14
+    posX: 1784
+    posY: 901
+    waitForCompletion: 1
+    allowSkipAnimation: 0
+    waitDuration: 1
+    triggerKey: 
+    flagKey: 
+    invertFlag: 0
+    characterId: 
+    position: 0
+    characterSprite: {fileID: 0}
+    animationFlag: 
+    spriteFlag: 
+    backgroundSprite: {fileID: 0}
+    backgroundAnimFlag: 
+    setFlagKey: 
+    removeFlag: 0
+    eventKey: 
+    audioClip: {fileID: 0}
+    speakerName: Lei
+    dialogueText: On your knees scum !
+    dialogueAudio: {fileID: 0}
+    choices: []
+  - id: 9a7a0cf3-8074-4056-afee-96d731cc0eae
+    type: 14
+    posX: 1740
+    posY: 649
+    waitForCompletion: 1
+    allowSkipAnimation: 0
+    waitDuration: 1
+    triggerKey: 
+    flagKey: 
+    invertFlag: 0
+    characterId: 
+    position: 0
+    characterSprite: {fileID: 0}
+    animationFlag: 
+    spriteFlag: 
+    backgroundSprite: {fileID: 0}
+    backgroundAnimFlag: 
+    setFlagKey: 
+    removeFlag: 0
+    eventKey: 
+    audioClip: {fileID: 0}
+    speakerName: Lei
+    dialogueText: Gimme dat wet bootey
+    dialogueAudio: {fileID: 0}
+    choices: []
+  - id: 69f1b7b7-d724-45eb-8be8-fe97c61764a8
+    type: 4
+    posX: 1250
+    posY: 206
+    waitForCompletion: 1
+    allowSkipAnimation: 0
+    waitDuration: 2
+    triggerKey: 
+    flagKey: 
+    invertFlag: 0
+    characterId: 
+    position: 0
+    characterSprite: {fileID: 0}
+    animationFlag: 
+    spriteFlag: 
+    backgroundSprite: {fileID: 0}
+    backgroundAnimFlag: 
+    setFlagKey: 
+    removeFlag: 0
+    eventKey: 
+    audioClip: {fileID: 0}
+    speakerName: 
+    dialogueText: 
     dialogueAudio: {fileID: 0}
     choices: []
   links:
   - sourceNodeId: a77bc0ce-3df3-4d2b-aa91-910eeb0e41a8
     portIndex: 0
-    targetNodeId: 3a181707-7475-4f43-8c55-bd47965ef930
-  - sourceNodeId: 3a181707-7475-4f43-8c55-bd47965ef930
+    targetNodeId: 7c1b24e2-b7ff-4dc3-b2c1-71c0c175707d
+  - sourceNodeId: 7c1b24e2-b7ff-4dc3-b2c1-71c0c175707d
     portIndex: 0
-    targetNodeId: aa3ae18f-c113-47e9-bd39-69c677750b1b
-  - sourceNodeId: aa3ae18f-c113-47e9-bd39-69c677750b1b
+    targetNodeId: ea112437-18bc-4fd2-a3fa-57f56ceded8b
+  - sourceNodeId: 4610fa7d-0315-4ad2-aadb-74bb491d6a6f
     portIndex: 0
-    targetNodeId: b69a080e-638e-4899-957b-48046f647c69
-  - sourceNodeId: 4c9a2eaf-734a-494e-ab7f-4d9973c30794
+    targetNodeId: 1256b5a1-5626-4858-8b0b-79b2fd03c2cc
+  - sourceNodeId: 1256b5a1-5626-4858-8b0b-79b2fd03c2cc
     portIndex: 0
-    targetNodeId: d121b5e2-c3dc-41ce-aa5a-4b741aa13c11
-  - sourceNodeId: b69a080e-638e-4899-957b-48046f647c69
+    targetNodeId: bd9d23d7-8793-45d4-8a4e-7253d9ee2706
+  - sourceNodeId: bd9d23d7-8793-45d4-8a4e-7253d9ee2706
     portIndex: 0
-    targetNodeId: 4c9a2eaf-734a-494e-ab7f-4d9973c30794
+    targetNodeId: 20991fea-57cb-4612-8a9d-6b7a65020297
+  - sourceNodeId: 20991fea-57cb-4612-8a9d-6b7a65020297
+    portIndex: 0
+    targetNodeId: c0ccba94-d080-4d93-adb6-0dec8f1b2c8d
+  - sourceNodeId: c0ccba94-d080-4d93-adb6-0dec8f1b2c8d
+    portIndex: 0
+    targetNodeId: bbee71ab-ffd1-477c-92c3-f84cb38da7c7
+  - sourceNodeId: c0ccba94-d080-4d93-adb6-0dec8f1b2c8d
+    portIndex: 1
+    targetNodeId: a91c6c42-6785-4a68-bc2c-4344c3b80fc1
+  - sourceNodeId: a91c6c42-6785-4a68-bc2c-4344c3b80fc1
+    portIndex: 0
+    targetNodeId: 4e74c8a0-88dd-4c3f-a73e-479795831c74
+  - sourceNodeId: bbee71ab-ffd1-477c-92c3-f84cb38da7c7
+    portIndex: 0
+    targetNodeId: 9a7a0cf3-8074-4056-afee-96d731cc0eae
+  - sourceNodeId: ea112437-18bc-4fd2-a3fa-57f56ceded8b
+    portIndex: 0
+    targetNodeId: 69f1b7b7-d724-45eb-8be8-fe97c61764a8
+  - sourceNodeId: 69f1b7b7-d724-45eb-8be8-fe97c61764a8
+    portIndex: 0
+    targetNodeId: 4610fa7d-0315-4ad2-aadb-74bb491d6a6f

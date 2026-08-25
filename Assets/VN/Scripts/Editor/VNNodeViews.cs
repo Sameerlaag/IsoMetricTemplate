@@ -16,6 +16,40 @@ namespace VN.Editor
         }
     }
 
+    // Wait Node
+    public class VNWaitNodeView : VNStoryNodeView
+    {
+        private FloatField _durationField;
+        private Toggle _allowSkipToggle;
+
+        public VNWaitNodeView() : base("Wait Duration", TriggerColor, VNStoryNodeType.Wait)
+        {
+            CreateInputPort();
+            CreateOutputPort();
+
+            _durationField = new FloatField("Duration (sec)") { value = 1.0f };
+            _allowSkipToggle = new Toggle("Allow Skip") { value = false };
+
+            mainContainer.Add(_durationField);
+            mainContainer.Add(_allowSkipToggle);
+        }
+
+        public override VNStoryNodeData ToData()
+        {
+            var d = base.ToData();
+            d.waitDuration = _durationField.value;
+            d.allowSkipAnimation = _allowSkipToggle.value;
+            return d;
+        }
+
+        public override void LoadFromData(VNStoryNodeData data)
+        {
+            base.LoadFromData(data);
+            _durationField.value = data.waitDuration;
+            _allowSkipToggle.value = data.allowSkipAnimation;
+        }
+    }
+
     // Triggers
     public class VNTriggerNodeView : VNStoryNodeView
     {
@@ -84,6 +118,8 @@ namespace VN.Editor
         private ObjectField _spriteField;
         private TextField _animFlagField;
         private TextField _spriteFlagField;
+        private Toggle _waitToggle;
+        private Toggle _allowSkipToggle;
 
         public VNSetCharacterSpriteNodeView() : base("Set Character Sprite", ActionColor, VNStoryNodeType.SetCharacterSprite)
         {
@@ -94,11 +130,15 @@ namespace VN.Editor
             _spriteField = new ObjectField("Sprite") { objectType = typeof(Sprite) };
             _animFlagField = new TextField("Anim Flag (e.g. slow_fade_in)");
             _spriteFlagField = new TextField("Sprite Flag");
+            _waitToggle = new Toggle("Wait For Completion") { value = true };
+            _allowSkipToggle = new Toggle("Allow Skip Animation") { value = false };
 
             mainContainer.Add(_posField);
             mainContainer.Add(_spriteField);
             mainContainer.Add(_animFlagField);
             mainContainer.Add(_spriteFlagField);
+            mainContainer.Add(_waitToggle);
+            mainContainer.Add(_allowSkipToggle);
         }
 
         public override VNStoryNodeData ToData()
@@ -108,6 +148,8 @@ namespace VN.Editor
             d.characterSprite = (Sprite)_spriteField.value;
             d.animationFlag = _animFlagField.value;
             d.spriteFlag = _spriteFlagField.value;
+            d.waitForCompletion = _waitToggle.value;
+            d.allowSkipAnimation = _allowSkipToggle.value;
             return d;
         }
 
@@ -118,6 +160,8 @@ namespace VN.Editor
             _spriteField.value = data.characterSprite;
             _animFlagField.value = data.animationFlag;
             _spriteFlagField.value = data.spriteFlag;
+            _waitToggle.value = data.waitForCompletion;
+            _allowSkipToggle.value = data.allowSkipAnimation;
         }
     }
 
@@ -125,6 +169,8 @@ namespace VN.Editor
     {
         private EnumField _posField;
         private TextField _animFlagField;
+        private Toggle _waitToggle;
+        private Toggle _allowSkipToggle;
 
         public VNClearCharacterNodeView() : base("Clear Character Position", ActionColor, VNStoryNodeType.ClearCharacter)
         {
@@ -133,9 +179,13 @@ namespace VN.Editor
 
             _posField = new EnumField("Position", VNCharacterPosition.Middle);
             _animFlagField = new TextField("Anim Flag (e.g. slow_fade_out)");
+            _waitToggle = new Toggle("Wait For Completion") { value = true };
+            _allowSkipToggle = new Toggle("Allow Skip Animation") { value = false };
 
             mainContainer.Add(_posField);
             mainContainer.Add(_animFlagField);
+            mainContainer.Add(_waitToggle);
+            mainContainer.Add(_allowSkipToggle);
         }
 
         public override VNStoryNodeData ToData()
@@ -143,6 +193,8 @@ namespace VN.Editor
             var d = base.ToData();
             d.position = (VNCharacterPosition)_posField.value;
             d.animationFlag = _animFlagField.value;
+            d.waitForCompletion = _waitToggle.value;
+            d.allowSkipAnimation = _allowSkipToggle.value;
             return d;
         }
 
@@ -151,6 +203,8 @@ namespace VN.Editor
             base.LoadFromData(data);
             _posField.value = data.position;
             _animFlagField.value = data.animationFlag;
+            _waitToggle.value = data.waitForCompletion;
+            _allowSkipToggle.value = data.allowSkipAnimation;
         }
     }
 
@@ -159,6 +213,8 @@ namespace VN.Editor
     {
         private ObjectField _bgField;
         private TextField _animFlagField;
+        private Toggle _waitToggle;
+        private Toggle _allowSkipToggle;
 
         public VNSetBackgroundNodeView() : base("Set Background", ActionColor, VNStoryNodeType.SetBackground)
         {
@@ -167,9 +223,13 @@ namespace VN.Editor
 
             _bgField = new ObjectField("Background") { objectType = typeof(Sprite) };
             _animFlagField = new TextField("Anim Flag (e.g. slow_fade_in)");
+            _waitToggle = new Toggle("Wait For Completion") { value = true };
+            _allowSkipToggle = new Toggle("Allow Skip Animation") { value = false };
 
             mainContainer.Add(_bgField);
             mainContainer.Add(_animFlagField);
+            mainContainer.Add(_waitToggle);
+            mainContainer.Add(_allowSkipToggle);
         }
 
         public override VNStoryNodeData ToData()
@@ -177,6 +237,8 @@ namespace VN.Editor
             var d = base.ToData();
             d.backgroundSprite = (Sprite)_bgField.value;
             d.backgroundAnimFlag = _animFlagField.value;
+            d.waitForCompletion = _waitToggle.value;
+            d.allowSkipAnimation = _allowSkipToggle.value;
             return d;
         }
 
@@ -185,6 +247,8 @@ namespace VN.Editor
             base.LoadFromData(data);
             _bgField.value = data.backgroundSprite;
             _animFlagField.value = data.backgroundAnimFlag;
+            _waitToggle.value = data.waitForCompletion;
+            _allowSkipToggle.value = data.allowSkipAnimation;
         }
     }
 

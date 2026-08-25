@@ -20,6 +20,7 @@ namespace VN.Editor
 
                 new SearchTreeGroupEntry(new GUIContent("Triggers / Flow"), 1),
                 new SearchTreeEntry(new GUIContent("Start")) { level = 2, userData = VNStoryNodeType.Start },
+                new SearchTreeEntry(new GUIContent("Wait")) { level = 2, userData = VNStoryNodeType.Wait },
                 new SearchTreeEntry(new GUIContent("Phase Trigger")) { level = 2, userData = VNStoryNodeType.PhaseTrigger },
                 new SearchTreeEntry(new GUIContent("Flag Trigger")) { level = 2, userData = VNStoryNodeType.FlagTrigger },
                 new SearchTreeEntry(new GUIContent("Event Trigger")) { level = 2, userData = VNStoryNodeType.EventTrigger },
@@ -62,7 +63,6 @@ namespace VN.Editor
                         graphView.contentViewContainer,
                         windowMousePosition
                     );
-
                     nodeView.SetPosition(new Rect(worldPosition, Vector2.zero));
                     graphView.AddElement(nodeView);
                     return true;

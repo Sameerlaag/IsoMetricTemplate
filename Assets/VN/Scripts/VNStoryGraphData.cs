@@ -1,7 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-
+namespace VN
+{
     public enum VNCharacterPosition
     {
         Left,
@@ -16,6 +17,9 @@ using UnityEngine;
         PhaseTrigger,
         FlagTrigger,
         EventTrigger,
+
+        // Flow Control
+        Wait,
 
         // Conditions
         CheckFlag,
@@ -51,6 +55,11 @@ using UnityEngine;
         public VNStoryNodeType type;
         public float posX;
         public float posY;
+
+        // Flow control
+        public bool waitForCompletion = true; // Default true (wait for animation/fade)
+        public bool allowSkipAnimation = false; // Default false (not skippable unless checked)
+        public float waitDuration = 1.0f; // For Wait node
 
         // Triggers / Flags / Keys
         public string triggerKey;
@@ -116,4 +125,4 @@ using UnityEngine;
             return result;
         }
     }
-
+}
