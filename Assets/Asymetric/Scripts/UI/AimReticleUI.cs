@@ -33,7 +33,7 @@ public class AimReticleUI : MonoBehaviour
         {
             if (_reticleImage != null)
             {
-                if (!_reticleImage.enabled) _reticleImage.enabled = true;
+                if (!_reticleImage.enabled && _reticleImage.sprite != null) _reticleImage.enabled = true;
 
                 if (_inputReader != null)
                 {

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 public class ItemInstance
 {
@@ -26,9 +26,18 @@ public class ItemInstance
         Count = count;
     }
 
+    public static ItemInstance CreateInstance(ItemDefinition definition, int count)
+    {
+        if (definition is GunItem gunItem)
+        {
+            return new WeaponInstance(gunItem, count);
+        }
+        return new ItemInstance(definition, count);
+    }
+
     public ItemInstance CreateCopy(int count)
     {
-        return new ItemInstance(Definition, count);
+        return CreateInstance(Definition, count);
     }
 
     public int Add(int amount)

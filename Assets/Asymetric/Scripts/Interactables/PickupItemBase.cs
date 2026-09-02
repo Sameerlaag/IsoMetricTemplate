@@ -12,7 +12,7 @@ public class PickupItem : MonoBehaviour, IInteractable
 
     private void Awake()
     {
-        _item = new ItemInstance(_definition, _count);
+        _item = ItemInstance.CreateInstance(_definition, _count);
     }
 
     public string InteractionPrompt { get; }

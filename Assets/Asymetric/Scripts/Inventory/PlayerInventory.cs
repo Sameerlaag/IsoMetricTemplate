@@ -1,4 +1,5 @@
 using System.Linq;
+using UnityEngine;
 
 public class PlayerInventory
 {
@@ -40,8 +41,16 @@ public class PlayerInventory
 
     public bool TryEquipWeapon(ItemInstance item)
     {
-        if (item is not WeaponInstance weapon) return false;
+        if (item == null) return false;
         if (Weapons.IsFull) return false;
+
+        WeaponInstance weapon = item as WeaponInstance;
+        if (weapon == null && item.Definition is GunItem gunItem)
+        {
+            weapon = new WeaponInstance(gunItem, item.Count);
+        }
+
+        if (weapon == null) return false;
 
         if (Supplies.Items.Contains(item))
         {
@@ -96,5 +105,43 @@ public class PlayerInventory
         }
 
         return false;
+    }
+
+    public int GetTotalAmmoCount(AmmoType ammoType)
+    {
+        int total = 0;
+        foreach (var item in Supplies.Items)
+        {
+            if (item is AmmoInstance ammoInst && ammoInst.AmmoType == ammoType)
+            {
+                total += ammoInst.Count;
+            }
+            else if (item.Definition is AmmoItem ammoItem && ammoItem.ammoType == ammoType)
+            {
+                total += item.Count;
+            }
+        }
+        return total;
+    }
+
+    public int ConsumeAmmo(AmmoType ammoType, int amountNeeded)
+    {
+        if (amountNeeded <= 0) return 0;
+
+        int amountRemaining = amountNeeded;
+        var matchingItems = Supplies.Items
+            .Where(item => (item is AmmoInstance ammoInst && ammoInst.AmmoType == ammoType) ||
+                           (item.Definition is AmmoItem ammoItem && ammoItem.ammoType == ammoType))
+            .ToList();
+
+        foreach (var item in matchingItems)
+        {
+            if (amountRemaining <= 0) break;
+
+            int removed = Supplies.Remove(item, amountRemaining);
+            amountRemaining -= removed;
+        }
+
+        return amountNeeded - amountRemaining;
     }
 }

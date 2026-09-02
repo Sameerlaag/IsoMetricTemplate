@@ -2205,6 +2205,7 @@ MonoBehaviour:
   _weaponSlots:
   - {fileID: 2038225963}
   - {fileID: 438783381}
+  _weaponManager: {fileID: 1860852106}
 --- !u!1 &1369271667
 GameObject:
   m_ObjectHideFlags: 0
@@ -3939,7 +3940,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83a30d5c3e9144a4a46642fdb2194e63, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponManager
-  _currentWeaponData: {fileID: 11400000, guid: 64f4b2490d6e2e84f8e5e6e134e62149, type: 2}
+  _currentWeaponData: {fileID: 0}
   _weaponHoldPoint: {fileID: 2042986044}
   _enemyLayer:
     serializedVersion: 2

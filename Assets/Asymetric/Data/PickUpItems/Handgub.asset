@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0e81d09e728b4f939ae5b5abdbdcb455, type: 3}
+  m_Name: Handgub
+  m_EditorClassIdentifier: Assembly-CSharp::GunItem
+  <ID>k__BackingField: hand_gun
+  <DisplayName>k__BackingField: Handgun
+  <ItemType>k__BackingField: 5
+  <MaxStack>k__BackingField: 0
+  <InventoryPrefabAddress>k__BackingField: 
+  <WorldPrefabAddress>k__BackingField: 
+  <Icon>k__BackingField: {fileID: 21300000, guid: a8135526f8d3f3d409b1e79b142d0667, type: 3}
+  WeaponData: {fileID: 11400000, guid: 64f4b2490d6e2e84f8e5e6e134e62149, type: 2}

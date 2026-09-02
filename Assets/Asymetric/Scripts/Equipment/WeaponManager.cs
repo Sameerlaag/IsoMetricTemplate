@@ -22,6 +22,7 @@ public class WeaponManager : MonoBehaviour
     public bool IsReloading => _isReloading;
 
     private WeaponsInventory _weaponsInventory;
+    private WeaponInstance _currentWeaponInstance;
 
     private void Start()
     {
@@ -55,18 +56,17 @@ public class WeaponManager : MonoBehaviour
 
     private void HandleActiveWeaponChanged(WeaponInstance weapon, int slotIndex)
     {
-        if (weapon != null && weapon.Definition != null && weapon.Definition.WeaponData != null)
+        _currentWeaponInstance = weapon;
+
+        if (_currentWeaponInstance != null && _currentWeaponInstance.Definition != null && _currentWeaponInstance.Definition.WeaponData != null)
         {
-            EquipWeapon(weapon.Definition.WeaponData);
-        }
-        else if (weapon != null && weapon.Definition is GunItem gunItem && gunItem.WeaponData != null)
-        {
-            EquipWeapon(gunItem.WeaponData);
+            EquipWeapon(_currentWeaponInstance.Definition.WeaponData, _currentWeaponInstance.CurrentAmmo);
         }
         else
         {
             _currentWeaponData = null;
             _currentAmmo = 0;
+            _currentWeaponInstance = null;
             OnWeaponEquipped?.Invoke(null);
             OnAmmoUpdated?.Invoke(0, 0);
         }
@@ -78,7 +78,7 @@ public class WeaponManager : MonoBehaviour
 
     public IWeaponAimMechanic CurrentAimMechanic => _currentAimMechanic;
 
-    public void EquipWeapon(WeaponData data)
+    public void EquipWeapon(WeaponData data, int startingAmmo = -1)
     {
         if (data == null)
         {
@@ -91,7 +91,11 @@ public class WeaponManager : MonoBehaviour
         }
 
         _currentWeaponData = data;
-        _currentAmmo = data.MaxClipAmmo;
+        _currentAmmo = startingAmmo >= 0 ? startingAmmo : data.MaxClipAmmo;
+        if (_currentWeaponInstance != null)
+        {
+            _currentWeaponInstance.CurrentAmmo = _currentAmmo;
+        }
         _currentSpread = data.BaseSpread;
 
         // Obtain or attach weapon aim mechanic (defaults to RevolverAimMechanic if none present)
@@ -140,13 +144,17 @@ public class WeaponManager : MonoBehaviour
 
         if (_currentAmmo <= 0)
         {
-            // TryReload();
-            // TODO Play click Audio
+            TryReload();
             return;
         }
 
         _nextFireTime = Time.time + _currentWeaponData.FireRate;
         _currentAmmo--;
+        if (_currentWeaponInstance != null)
+        {
+            _currentWeaponInstance.CurrentAmmo = _currentAmmo;
+        }
+
         _currentSpread += _currentWeaponData.RecoilPerShot; // Add bloom
 
         if (_currentAimMechanic != null && camera != null)
@@ -164,19 +172,45 @@ public class WeaponManager : MonoBehaviour
 
     public void TryReload()
     {
-        if (_isReloading || _currentAmmo == _currentWeaponData.MaxClipAmmo) return;
+        if (_isReloading || _currentWeaponData == null || _currentAmmo >= _currentWeaponData.MaxClipAmmo) return;
+
+        int availableReserveAmmo = 0;
+        if (InventoryManager.Instance != null && InventoryManager.Instance.PlayerInventory != null)
+        {
+            availableReserveAmmo = InventoryManager.Instance.PlayerInventory.GetTotalAmmoCount(_currentWeaponData.RequiredAmmoType);
+        }
+
+        if (availableReserveAmmo <= 0)
+        {
+            Debug.Log($"[Reload] No reserve ammo of type {_currentWeaponData.RequiredAmmoType} in inventory!");
+            return;
+        }
+
         StartCoroutine(ReloadRoutine());
     }
 
     private IEnumerator ReloadRoutine()
     {
         _isReloading = true;
-        Debug.Log("Reloading...");
+        Debug.Log($"Reloading {_currentWeaponData.WeaponName}...");
         yield return new WaitForSeconds(_currentWeaponData.ReloadTime);
 
-        _currentAmmo = _currentWeaponData.MaxClipAmmo;
+        int ammoNeeded = _currentWeaponData.MaxClipAmmo - _currentAmmo;
+        int consumedAmmo = 0;
+
+        if (InventoryManager.Instance != null && InventoryManager.Instance.PlayerInventory != null)
+        {
+            consumedAmmo = InventoryManager.Instance.PlayerInventory.ConsumeAmmo(_currentWeaponData.RequiredAmmoType, ammoNeeded);
+        }
+
+        _currentAmmo += consumedAmmo;
+        if (_currentWeaponInstance != null)
+        {
+            _currentWeaponInstance.CurrentAmmo = _currentAmmo;
+        }
+
         _isReloading = false;
         OnAmmoUpdated?.Invoke(_currentAmmo, _currentWeaponData.MaxClipAmmo);
-        Debug.Log("Reload Complete!");
+        Debug.Log($"Reload Complete! Clip ammo: {_currentAmmo}/{_currentWeaponData.MaxClipAmmo}");
     }
 }
