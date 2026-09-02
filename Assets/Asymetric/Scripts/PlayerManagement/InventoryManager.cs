@@ -4,9 +4,9 @@ public class InventoryManager : MonoBehaviour
 {
     public static InventoryManager Instance { get; private set; }
 
-    [Header("Inventory")]
-    [SerializeField]
-    private int _supplierCapacity = 10;
+    [SerializeField] private WeaponManager _weaponManager;
+
+    [Header("Inventory")] [SerializeField] private int _supplierCapacity = 10;
     private int _weaponCapacity = 2;
     private int _equipmentCapacity = 1;
 
@@ -37,5 +37,13 @@ public class InventoryManager : MonoBehaviour
             _equipmentCapacity,
             _allowMultipleStacks
         );
+    }
+
+    public void ItemInteracted(InventoryUIItem item)
+    {
+        if (item == null && item.Item is GunInstance)
+        {
+            _weaponManager.EquipWeapon(((GunInstance)item.Item).Definition.WeaponData);
+        }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using UnityEngine;
 
 public class WeaponManager : MonoBehaviour
@@ -33,6 +34,7 @@ public class WeaponManager : MonoBehaviour
         _currentWeaponData = data;
         _currentAmmo = data.MaxClipAmmo;
         _currentSpread = data.BaseSpread;
+        OnWeaponEquipped?.Invoke(_currentWeaponData);
         OnAmmoUpdated?.Invoke(_currentAmmo, _currentWeaponData.MaxClipAmmo);
     }
 
@@ -41,7 +43,8 @@ public class WeaponManager : MonoBehaviour
         if (_currentWeaponData == null) return;
 
         // Calculate dynamic spread based on movement speed
-        float targetSpread = _currentWeaponData.BaseSpread + (currentMovementSpeed * _currentWeaponData.MovementSpreadMultiplier);
+        float targetSpread = _currentWeaponData.BaseSpread +
+                             (currentMovementSpeed * _currentWeaponData.MovementSpreadMultiplier);
         _currentSpread = Mathf.Lerp(_currentSpread, targetSpread, Time.deltaTime * 10f);
 
         OnSpreadUpdated?.Invoke(_currentSpread);
@@ -73,7 +76,7 @@ public class WeaponManager : MonoBehaviour
         StartCoroutine(ReloadRoutine());
     }
 
-    private System.Collections.IEnumerator ReloadRoutine()
+    private IEnumerator ReloadRoutine()
     {
         _isReloading = true;
         Debug.Log("Reloading...");
