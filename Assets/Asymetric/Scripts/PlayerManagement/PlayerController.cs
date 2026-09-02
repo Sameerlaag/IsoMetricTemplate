@@ -3,22 +3,31 @@ using UnityEngine;
 [RequireComponent(typeof(UnityEngine.CharacterController))]
 public class PlayerController : MonoBehaviour
 {
-    public enum MovementState { Normal, Aiming }
+    public enum MovementState
+    {
+        Normal,
+        Aiming
+    }
 
-    [Header("Input & Camera Reference")]
-    [SerializeField] private InputReader _inputReader;
+    [Header("Input & Camera Reference")] [SerializeField]
+    private InputReader _inputReader;
+    [SerializeField] private InteractionManager _interactionManager;
+    [SerializeField] private WeaponManager _weaponManager;
+    [SerializeField] private EquipmentManager _equipmentManager;
+
     [SerializeField] private Transform _rootTransform;
     [SerializeField] private Camera _mainCamera;
 
-    [Header("Movement Speeds")]
-    [SerializeField] private float _walkSpeed = 5f;
+    [Header("Movement Speeds")] [SerializeField]
+    private float _walkSpeed = 5f;
+
     [SerializeField] private float _runSpeed = 9f;
     [SerializeField] private float _aimSpeed = 2.5f;
     [SerializeField] private float _rotationSpeed = 720f;
     [SerializeField] private float _aimRotationSpeed = 1200f;
 
-    [Header("Deceleration & Physics")]
-    [SerializeField] private float _maxSlopeAngle = 45f;
+    [Header("Deceleration & Physics")] [SerializeField]
+    private float _maxSlopeAngle = 45f;
 
     [SerializeField] private float _stopDecelerationTime = 0.5f;
     [SerializeField] private float _sprintToWalkDeceleration = 8f;
@@ -27,7 +36,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float _gravity = -19.62f;
     [SerializeField] private LayerMask _aimRaycastMask = ~0;
 
-    private UnityEngine.CharacterController _characterController;
+    private CharacterController _characterController;
     private Vector3 _currentVelocity;
     private Vector3 _lastDirection;
     private float _currentSpeed;
@@ -47,11 +56,27 @@ public class PlayerController : MonoBehaviour
         if (_mainCamera == null) _mainCamera = Camera.main;
     }
 
+    private void OnEnable()
+    {
+        _inputReader.OnAimStarted += EnableAimMode;
+        _inputReader.OnAimCanceled += DisableAimMode;
+        _inputReader.OnReloadStarted += HandleReload;
+        _inputReader.OnEquipedItemPerformed += HandleEquipment;
+    }
+
+    private void OnDisable()
+    {
+        _inputReader.OnAimStarted -= EnableAimMode;
+        _inputReader.OnAimCanceled -= DisableAimMode;
+        _inputReader.OnReloadStarted -= HandleReload;
+        _inputReader.OnEquipedItemPerformed -= HandleEquipment;
+    }
+    
     private void Update()
     {
         UpdateGroundInfo();
         UpdateState();
-        
+
         if (CurrentState == MovementState.Normal)
         {
             HandleNormalMovement();
@@ -61,7 +86,28 @@ public class PlayerController : MonoBehaviour
             HandleAimMovement();
         }
     }
+    private void EnableAimMode()
+    {
+        CurrentState = MovementState.Aiming;
+        if (_interactionManager != null) _interactionManager.enabled = false; // Disable object interaction while aiming
+    }
 
+    private void DisableAimMode()
+    {
+        CurrentState = MovementState.Normal;
+        if (_interactionManager != null) _interactionManager.enabled = true; // Re-enable interaction when exploring
+    }
+
+    private void HandleReload()
+    {
+        _weaponManager.TryReload();
+    }
+
+    private void HandleEquipment()
+    {
+        //_equipmentManager.TryUseEquipment();
+    }
+    
     private void UpdateState()
     {
         CurrentState = _inputReader.IsAiming ? MovementState.Aiming : MovementState.Normal;
@@ -85,7 +131,7 @@ public class PlayerController : MonoBehaviour
         Vector2 rawInput = _inputReader.MoveInput;
         Vector3 cameraForward = Vector3.Scale(_rootTransform.forward, new Vector3(1, 0, 1)).normalized;
         Vector3 cameraRight = Vector3.Scale(_rootTransform.right, new Vector3(1, 0, 1)).normalized;
-        
+
         Vector3 worldInputDirection = (cameraForward * rawInput.y + cameraRight * rawInput.x).normalized;
         Vector3 targetDirection = SnapTo8Directions(worldInputDirection);
 
@@ -117,7 +163,8 @@ public class PlayerController : MonoBehaviour
             else
             {
                 Quaternion targetRotation = Quaternion.LookRotation(targetDirection, Vector3.up);
-                transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, _rotationSpeed * Time.deltaTime);
+                transform.rotation =
+                    Quaternion.RotateTowards(transform.rotation, targetRotation, _rotationSpeed * Time.deltaTime);
 
                 float accelRate = (_currentSpeed > targetMaxSpeed) ? _sprintToWalkDeceleration : 12f;
                 _currentSpeed = Mathf.MoveTowards(_currentSpeed, targetMaxSpeed, accelRate * Time.deltaTime);
@@ -156,14 +203,15 @@ public class PlayerController : MonoBehaviour
         {
             AimDirection = aimDir.normalized;
             Quaternion targetRotation = Quaternion.LookRotation(AimDirection, Vector3.up);
-            transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, _aimRotationSpeed * Time.deltaTime);
+            transform.rotation =
+                Quaternion.RotateTowards(transform.rotation, targetRotation, _aimRotationSpeed * Time.deltaTime);
         }
 
         // 2. Strafe Movement (Relative to Camera)
         Vector2 rawInput = _inputReader.MoveInput;
         Vector3 cameraForward = Vector3.Scale(_rootTransform.forward, new Vector3(1, 0, 1)).normalized;
         Vector3 cameraRight = Vector3.Scale(_rootTransform.right, new Vector3(1, 0, 1)).normalized;
-        
+
         Vector3 moveDir = (cameraForward * rawInput.y + cameraRight * rawInput.x).normalized;
 
         if (moveDir.sqrMagnitude > 0.01f)
@@ -219,7 +267,7 @@ public class PlayerController : MonoBehaviour
 
         float angle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
         float snappedAngle = Mathf.Round(angle / 45f) * 45f;
-        
+
         return new Vector3(Mathf.Sin(snappedAngle * Mathf.Deg2Rad), 0f, Mathf.Cos(snappedAngle * Mathf.Deg2Rad));
     }
 }

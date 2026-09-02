@@ -6,7 +6,9 @@ public class InventoryManager : MonoBehaviour
 
     [Header("Inventory")]
     [SerializeField]
-    private int _capacity = 10;
+    private int _supplierCapacity = 10;
+    private int _weaponCapacity = 2;
+    private int _equipmentCapacity = 1;
 
     [Tooltip(
         "If enabled, the same item ID can occupy multiple inventory slots. " +
@@ -30,7 +32,9 @@ public class InventoryManager : MonoBehaviour
         Instance = this;
 
         PlayerInventory = new PlayerInventory(
-            _capacity,
+            _supplierCapacity,
+            _weaponCapacity,
+            _equipmentCapacity,
             _allowMultipleStacks
         );
     }

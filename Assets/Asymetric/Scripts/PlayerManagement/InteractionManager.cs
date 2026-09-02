@@ -3,15 +3,20 @@ using UnityEngine;
 
 public class InteractionManager : MonoBehaviour
 {
-    [Header("Input & Layer")]
-    [SerializeField] private InputReader _inputReader;
+    [Header("State Machine")] [SerializeField]
+    private PlayerController _targetPlayer;
+
+
+    [Header("Input & Layer")] [SerializeField]
+    private InputReader _inputReader;
+
     [SerializeField] private LayerMask _interactableLayer;
 
-    [Header("Detection Parameters")]
-    [SerializeField] private float _detectionRadius = 3f;
+    [Header("Detection Parameters")] [SerializeField]
+    private float _detectionRadius = 3f;
+
     [SerializeField] private float _maxInteractionAngle = 90f;
-    [Range(0f, 1f)]
-    [SerializeField] private float _angleWeight = 0.6f;
+    [Range(0f, 1f)] [SerializeField] private float _angleWeight = 0.6f;
 
     private readonly Collider[] _hitBuffer = new Collider[10];
     private readonly List<InteractableTarget> _detectedInteractables = new();
@@ -21,7 +26,8 @@ public class InteractionManager : MonoBehaviour
     private float _currentHoldTimer;
     private bool _isHolding;
 
-    public IInteractable CurrentInteractable => _detectedInteractables.Count > 0 ? _detectedInteractables[0].Interactable : null;
+    public IInteractable CurrentInteractable =>
+        _detectedInteractables.Count > 0 ? _detectedInteractables[0].Interactable : null;
 
     private struct InteractableTarget
     {
@@ -45,8 +51,40 @@ public class InteractionManager : MonoBehaviour
 
     private void Update()
     {
-        ScanAndRankInteractables();
-        ProcessHoldInteraction();
+        if (_targetPlayer.CurrentState != PlayerController.MovementState.Aiming)
+        {
+            ScanAndRankInteractables();
+            ProcessHoldInteraction();
+            UpdateInteractibleUI();
+        }
+        else
+        {
+            ReadyWeapon();
+            UpdateEquipmentUI();
+        }
+    }
+
+    /// <summary>
+    /// Play and wait for ready weapon animation
+    /// listen to aiming, and process weapon info to aiming service
+    /// </summary>
+    private void ReadyWeapon()
+    {
+        
+    }
+
+    /// <summary>
+    /// Call Interactible UI and update what's visible etc
+    /// </summary>
+    private void UpdateInteractibleUI()
+    {
+    }
+
+    /// <summary>
+    /// Call Equipment UI and update what's visible etc
+    /// </summary>
+    private void UpdateEquipmentUI()
+    {
     }
 
     private void ProcessHoldInteraction()
@@ -62,7 +100,7 @@ public class InteractionManager : MonoBehaviour
 
         _currentHoldTimer += Time.deltaTime;
         float progress = Mathf.Clamp01(_currentHoldTimer / _activeHoldInteractable.HoldDuration);
-        
+
         _activeHoldInteractable.OnHoldProgress(progress);
 
         if (_currentHoldTimer >= _activeHoldInteractable.HoldDuration)
@@ -106,6 +144,7 @@ public class InteractionManager : MonoBehaviour
             _activeHoldInteractable.OnHoldCanceled(gameObject);
             _activeHoldInteractable.OnHoldProgress(0f);
         }
+
         ResetHoldState();
     }
 
@@ -119,7 +158,8 @@ public class InteractionManager : MonoBehaviour
     private void ScanAndRankInteractables()
     {
         _detectedInteractables.Clear();
-        int hitCount = Physics.OverlapSphereNonAlloc(transform.position, _detectionRadius, _hitBuffer, _interactableLayer);
+        int hitCount =
+            Physics.OverlapSphereNonAlloc(transform.position, _detectionRadius, _hitBuffer, _interactableLayer);
 
         Vector3 forward = transform.forward;
         Vector3 playerPos = transform.position;
@@ -140,7 +180,8 @@ public class InteractionManager : MonoBehaviour
                 float normAngle = Mathf.Clamp01(angle / _maxInteractionAngle);
                 float compositeScore = (normDistance * (1f - _angleWeight)) + (normAngle * _angleWeight);
 
-                _detectedInteractables.Add(new InteractableTarget { Interactable = interactable, Score = compositeScore });
+                _detectedInteractables.Add(new InteractableTarget
+                    { Interactable = interactable, Score = compositeScore });
             }
         }
 

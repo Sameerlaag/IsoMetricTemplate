@@ -2,7 +2,7 @@
 
 public class ItemInstance
 {
-    public ItemDefinition Definition { get; }
+    public ItemDefinition Definition { get; protected set; }
 
     public int Count { get; private set; }
 
