@@ -1,6 +1,6 @@
 using UnityEngine;
 
-[RequireComponent(typeof(UnityEngine.CharacterController))]
+[RequireComponent(typeof(CharacterController))]
 public class PlayerController : MonoBehaviour
 {
     public enum MovementState
@@ -11,6 +11,7 @@ public class PlayerController : MonoBehaviour
 
     [Header("Input & Camera Reference")] [SerializeField]
     private InputReader _inputReader;
+
     [SerializeField] private InteractionManager _interactionManager;
     [SerializeField] private WeaponManager _weaponManager;
     [SerializeField] private EquipmentManager _equipmentManager;
@@ -44,6 +45,7 @@ public class PlayerController : MonoBehaviour
     private bool _isHardStopping;
     private float _verticalVelocity;
     private Vector3 _groundNormal = Vector3.up;
+    private Vector2 _lastMousePosition;
 
     public MovementState CurrentState { get; private set; } = MovementState.Normal;
     public Vector3 AimTargetPoint { get; private set; }
@@ -52,7 +54,7 @@ public class PlayerController : MonoBehaviour
 
     private void Awake()
     {
-        _characterController = GetComponent<UnityEngine.CharacterController>();
+        _characterController = GetComponent<CharacterController>();
         if (_mainCamera == null) _mainCamera = Camera.main;
     }
 
@@ -60,6 +62,7 @@ public class PlayerController : MonoBehaviour
     {
         _inputReader.OnAimStarted += EnableAimMode;
         _inputReader.OnAimCanceled += DisableAimMode;
+        _inputReader.OnFireWeaponPerformed += HandleFire;
         _inputReader.OnReloadStarted += HandleReload;
         _inputReader.OnEquipedItemPerformed += HandleEquipment;
     }
@@ -68,10 +71,11 @@ public class PlayerController : MonoBehaviour
     {
         _inputReader.OnAimStarted -= EnableAimMode;
         _inputReader.OnAimCanceled -= DisableAimMode;
+        _inputReader.OnFireWeaponPerformed -= HandleFire;
         _inputReader.OnReloadStarted -= HandleReload;
         _inputReader.OnEquipedItemPerformed -= HandleEquipment;
     }
-    
+
     private void Update()
     {
         UpdateGroundInfo();
@@ -86,16 +90,21 @@ public class PlayerController : MonoBehaviour
             HandleAimMovement();
         }
     }
+
     private void EnableAimMode()
     {
         CurrentState = MovementState.Aiming;
-        if (_interactionManager != null) _interactionManager.enabled = false; // Disable object interaction while aiming
     }
 
     private void DisableAimMode()
     {
         CurrentState = MovementState.Normal;
-        if (_interactionManager != null) _interactionManager.enabled = true; // Re-enable interaction when exploring
+    }
+
+    private void HandleFire()
+    {
+        if (CurrentState == MovementState.Aiming)
+            _weaponManager.TryFire(_inputReader.MousePosition, Camera.current);
     }
 
     private void HandleReload()
@@ -107,7 +116,7 @@ public class PlayerController : MonoBehaviour
     {
         //_equipmentManager.TryUseEquipment();
     }
-    
+
     private void UpdateState()
     {
         CurrentState = _inputReader.IsAiming ? MovementState.Aiming : MovementState.Normal;
@@ -222,6 +231,19 @@ public class PlayerController : MonoBehaviour
         else
         {
             ApplyDeceleration();
+        }
+
+        Vector2 currentMousePos = _inputReader.MousePosition;
+        Vector2 mouseDelta = currentMousePos - _lastMousePosition;
+        _lastMousePosition = currentMousePos;
+
+        Vector3 playerScreenPos =
+            _mainCamera != null ? _mainCamera.WorldToScreenPoint(transform.position) : Vector3.zero;
+        float cursorDistance = Vector2.Distance(playerScreenPos, currentMousePos);
+
+        if (_weaponManager != null)
+        {
+            _weaponManager.UpdateAimState(AimTargetPoint, _currentSpeed, mouseDelta, cursorDistance, _mainCamera);
         }
 
         ApplyMovementVelocity(moveDir.sqrMagnitude > 0.01f ? moveDir : _lastDirection);

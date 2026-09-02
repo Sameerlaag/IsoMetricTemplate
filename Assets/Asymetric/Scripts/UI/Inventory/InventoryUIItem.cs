@@ -1,4 +1,4 @@
-﻿using TMPro;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -30,15 +30,35 @@ public class InventoryUIItem : MonoBehaviour
     }
     public void UpdateCount()
     {
-        if (Item == null)
+        if (Item == null || _countText == null)
             return;
 
-        _countText.text = Item.Count.ToString();
+        if (Item is WeaponInstance gunInstance && gunInstance.Definition != null && gunInstance.Definition.WeaponData != null)
+        {
+            _countText.text = $"{gunInstance.CurrentAmmo} / {gunInstance.Definition.WeaponData.MaxClipAmmo}";
+        }
+        else if (Item.ItemType == ItemType.WEAPON)
+        {
+            _countText.text = "";
+        }
+        else if (Item.ItemType == ItemType.DOCUMENT || Item.ItemType == ItemType.KEY)
+        {
+            _countText.text = "";
+        }
+        else
+        {
+            _countText.text = Item.Count > 1 ? Item.Count.ToString() : "";
+        }
     }
 
     public void SetSelected(bool selected)
     {
         if (selected) _background.color = _selectedColor;
         else _background.color = _defaultColor;
+    }
+
+    public void SignalInteracted()
+    {
+        InventoryManager.Instance.ItemInteracted(this);
     }
 }

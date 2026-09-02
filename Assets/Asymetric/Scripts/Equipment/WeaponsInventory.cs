@@ -1,24 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 public class WeaponsInventory
 {
     private readonly int _capacity;
-    private readonly List<ItemInstance> _weapons = new();
+    private readonly List<WeaponInstance> _weapons = new();
     private int _activeSlotIndex = -1;
 
-    public IReadOnlyList<ItemInstance> Weapons => _weapons;
+    public IReadOnlyList<WeaponInstance> Weapons => _weapons;
     public int Capacity => _capacity;
     public bool IsFull => _weapons.Count >= _capacity;
     public int ActiveSlotIndex => _activeSlotIndex;
 
-    public ItemInstance ActiveWeapon => 
+    public WeaponInstance ActiveWeapon => 
         (_activeSlotIndex >= 0 && _activeSlotIndex < _weapons.Count) ? _weapons[_activeSlotIndex] : null;
 
     // Events
-    public event Action<ItemInstance, int> WeaponEquipped;    // (Weapon, SlotIndex)
-    public event Action<ItemInstance, int> WeaponUnequipped;  // (Weapon, SlotIndex)
-    public event Action<ItemInstance, int> ActiveWeaponChanged; // (Weapon, SlotIndex)
+    public event Action<WeaponInstance, int> WeaponEquipped;    // (Weapon, SlotIndex)
+    public event Action<WeaponInstance, int> WeaponUnequipped;  // (Weapon, SlotIndex)
+    public event Action<WeaponInstance, int> ActiveWeaponChanged; // (Weapon, SlotIndex)
 
     public WeaponsInventory(int capacity)
     {
@@ -28,26 +29,54 @@ public class WeaponsInventory
         _capacity = capacity;
     }
 
-    public bool TryEquip(ItemInstance weapon)
+    public bool TryEquip(WeaponInstance weapon)
     {
-        if (weapon == null || IsFull || _weapons.Contains(weapon))
+        Debug.Log($"[TryEquip] Attempting to equip: {weapon}");
+
+        if (weapon == null)
+        {
+            Debug.LogWarning("[TryEquip] Failed: weapon is null.");
             return false;
+        }
+
+        if (IsFull)
+        {
+            Debug.LogWarning($"[TryEquip] Failed: weapon inventory is full. Count: {_weapons.Count}");
+            return false;
+        }
+
+        if (_weapons.Contains(weapon))
+        {
+            Debug.LogWarning("[TryEquip] Failed: weapon is already in the inventory.");
+            return false;
+        }
+
+        Debug.Log("[TryEquip] All checks passed. Adding weapon...");
 
         _weapons.Add(weapon);
+
         int slotIndex = _weapons.Count - 1;
 
+        Debug.Log($"[TryEquip] Weapon added successfully. Slot index: {slotIndex}, Total weapons: {_weapons.Count}");
+
         WeaponEquipped?.Invoke(weapon, slotIndex);
+
+        Debug.Log("[TryEquip] WeaponEquipped event invoked.");
 
         // Auto-select first added weapon
         if (_weapons.Count == 1)
         {
+            Debug.Log("[TryEquip] First weapon added. Selecting slot 0.");
             SelectSlot(0);
         }
+
+        Debug.Log("[TryEquip] Equip successful.");
 
         return true;
     }
 
-    public bool TryUnequip(ItemInstance weapon)
+
+    public bool TryUnequip(WeaponInstance weapon)
     {
         if (weapon == null || !_weapons.Contains(weapon))
             return false;

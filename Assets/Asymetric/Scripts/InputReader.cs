@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -6,7 +6,7 @@ using UnityEngine.InputSystem;
 public class InputReader : ScriptableObject, PlayerActionsInputs.IPlayerActions
 {
     public Vector2 MoveInput { get; private set; }
-    
+
     public Vector2 MousePosition { get; private set; }
     public bool IsSprinting { get; private set; }
     public bool IsCrouching { get; private set; }
@@ -19,6 +19,8 @@ public class InputReader : ScriptableObject, PlayerActionsInputs.IPlayerActions
 
     public event Action OnMenuPerformed;
 
+    public event Action OnFireWeaponPerformed;
+
     public event Action OnEquipedItemPerformed;
     public event Action OnEquipedItemStarted;
     public event Action OnEquipedItemCanceled;
@@ -28,7 +30,7 @@ public class InputReader : ScriptableObject, PlayerActionsInputs.IPlayerActions
 
     public event Action OnAimStarted;
     public event Action OnAimCanceled;
-    
+
     private PlayerActionsInputs _inputActions;
 
     private void OnEnable()
@@ -82,8 +84,8 @@ public class InputReader : ScriptableObject, PlayerActionsInputs.IPlayerActions
 
     public void OnReload(InputAction.CallbackContext context)
     {
-        if (context.started) OnInteractStarted?.Invoke();
-        else if (context.canceled) OnInteractCanceled?.Invoke();
+        if (context.started) OnReloadStarted?.Invoke();
+        else if (context.canceled) OnReloadCanceled?.Invoke();
     }
 
     public void OnEquiped(InputAction.CallbackContext context)
@@ -110,5 +112,10 @@ public class InputReader : ScriptableObject, PlayerActionsInputs.IPlayerActions
     public void OnPoint(InputAction.CallbackContext context)
     {
         MousePosition = context.ReadValue<Vector2>();
+    }
+
+    public void OnFire(InputAction.CallbackContext context)
+    {
+        OnFireWeaponPerformed?.Invoke();
     }
 }

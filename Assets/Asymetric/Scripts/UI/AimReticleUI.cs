@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
 
 public class AimReticleUI : MonoBehaviour
@@ -6,6 +6,8 @@ public class AimReticleUI : MonoBehaviour
     [SerializeField] private PlayerController _playerController;
     [SerializeField] private WeaponManager _weaponManager;
     [SerializeField] private Image _reticleImage;
+
+    [SerializeField] private InputReader _inputReader;
 
     private void OnEnable()
     {
@@ -25,18 +27,40 @@ public class AimReticleUI : MonoBehaviour
         }
     }
 
+    private void Update()
+    {
+        if (_playerController != null && _playerController.CurrentState == PlayerController.MovementState.Aiming)
+        {
+            if (_reticleImage != null)
+            {
+                if (!_reticleImage.enabled) _reticleImage.enabled = true;
+
+                if (_inputReader != null)
+                {
+                    _reticleImage.transform.position = _inputReader.MousePosition;
+                }
+            }
+        }
+        else
+        {
+            if (_reticleImage != null && _reticleImage.enabled)
+            {
+                _reticleImage.enabled = false;
+            }
+        }
+    }
+
     private void HandleWeaponEquipped(WeaponData newWeapon)
     {
         if (_reticleImage != null && newWeapon != null)
         {
-            _reticleImage.enabled = true;
             _reticleImage.sprite = newWeapon.EnabledAimSprite;
         }
     }
 
-    private void UpdateReticleSpread(float spreadAngle)
+    private void UpdateReticleSpread(float spreadScale)
     {
-        float scaleFactor = 1f + (spreadAngle * 0.1f);
-        _reticleImage.transform.localScale = new Vector3(scaleFactor, scaleFactor, 1f);
+        if (_reticleImage == null) return;
+        _reticleImage.transform.localScale = new Vector3(spreadScale, spreadScale, 1f);
     }
 }

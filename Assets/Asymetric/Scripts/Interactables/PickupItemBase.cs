@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 public class PickupItem : MonoBehaviour, IInteractable
 {
@@ -20,8 +20,8 @@ public class PickupItem : MonoBehaviour, IInteractable
     public void Interact(GameObject interactor)
     {
         int pickedUp = InventoryManager.Instance
-            .PlayerInventory.Supplies
-            .TryAdd(_item);
+            .PlayerInventory
+            .TryAddItem(_item);
         
         Debug.Log($"player picked up {pickedUp} of this item");
 

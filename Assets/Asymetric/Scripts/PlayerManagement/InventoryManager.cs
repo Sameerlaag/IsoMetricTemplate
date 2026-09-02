@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 public class InventoryManager : MonoBehaviour
 {
@@ -39,11 +39,19 @@ public class InventoryManager : MonoBehaviour
         );
     }
 
-    public void ItemInteracted(InventoryUIItem item)
+    public void ItemInteracted(InventoryUIItem uiItem)
     {
-        if (item == null && item.Item is GunInstance)
+        if (uiItem == null || uiItem.Item == null) return;
+
+        ItemInstance item = uiItem.Item;
+
+        if (item.ItemType == ItemType.WEAPON)
         {
-            _weaponManager.EquipWeapon(((GunInstance)item.Item).Definition.WeaponData);
+            PlayerInventory.TryEquipWeapon(item);
+        }
+        else if (item.ItemType == ItemType.EQUIPABLE)
+        {
+            PlayerInventory.TryEquipEquipment(item);
         }
     }
 }
