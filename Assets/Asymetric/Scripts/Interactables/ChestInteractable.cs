@@ -2,12 +2,14 @@
 
 public class ChestInteractable : MonoBehaviour, IInteractable
 {
+    [SerializeField] private GameObject _content;
     [SerializeField] private float _holdTime = 2.0f; // Requires 2 seconds hold to open
     private bool _isOpened;
 
     public string InteractionPrompt => _isOpened ? "Chest is empty" : $"Hold [E] to open ({_holdTime}s)";
     public bool RequiresHold => !_isOpened;
     public float HoldDuration => _holdTime;
+
 
     public void OnHoldStarted(GameObject interactor)
     {
@@ -28,6 +30,8 @@ public class ChestInteractable : MonoBehaviour, IInteractable
     public void Interact(GameObject interactor)
     {
         _isOpened = true;
+        if (_content != null) Instantiate(_content, transform.position, Quaternion.identity);
+        Destroy(gameObject);
         Debug.Log("Chest opened! Loot dropped.");
     }
 }

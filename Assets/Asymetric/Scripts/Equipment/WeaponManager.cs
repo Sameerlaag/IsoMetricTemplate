@@ -6,6 +6,7 @@ public class WeaponManager : MonoBehaviour
 {
     [SerializeField] private WeaponData _currentWeaponData;
     [SerializeField] private Transform _weaponHoldPoint;
+    private WeaponController _currentWeaponController;
 
     // Weapon State
     private int _currentAmmo;
@@ -58,7 +59,8 @@ public class WeaponManager : MonoBehaviour
     {
         _currentWeaponInstance = weapon;
 
-        if (_currentWeaponInstance != null && _currentWeaponInstance.Definition != null && _currentWeaponInstance.Definition.WeaponData != null)
+        if (_currentWeaponInstance != null && _currentWeaponInstance.Definition != null &&
+            _currentWeaponInstance.Definition.WeaponData != null)
         {
             EquipWeapon(_currentWeaponInstance.Definition.WeaponData, _currentWeaponInstance.CurrentAmmo);
         }
@@ -96,6 +98,7 @@ public class WeaponManager : MonoBehaviour
         {
             _currentWeaponInstance.CurrentAmmo = _currentAmmo;
         }
+
         _currentSpread = data.BaseSpread;
 
         // Obtain or attach weapon aim mechanic (defaults to RevolverAimMechanic if none present)
@@ -109,9 +112,19 @@ public class WeaponManager : MonoBehaviour
 
         OnWeaponEquipped?.Invoke(_currentWeaponData);
         OnAmmoUpdated?.Invoke(_currentAmmo, _currentWeaponData.MaxClipAmmo);
+
+        var spawnedItem = Instantiate(_currentWeaponData.WeaponPrefab, _weaponHoldPoint);
+        spawnedItem.GetComponent<Rigidbody>().isKinematic = true;
+        _currentWeaponController = spawnedItem.GetComponent<WeaponController>();
+        if (_currentWeaponController == null)
+        {
+            Debug.LogError("Weapon has no controller!");
+            throw new NullReferenceException();
+        }
     }
 
-    public void UpdateAimState(Vector3 aimPoint, float currentMovementSpeed, Vector2 mouseDelta, float cursorDistance, Camera camera)
+    public void UpdateAimState(Vector3 aimPoint, float currentMovementSpeed, Vector2 mouseDelta, float cursorDistance,
+        Camera camera)
     {
         if (_currentWeaponData == null) return;
 
@@ -159,8 +172,10 @@ public class WeaponManager : MonoBehaviour
 
         if (_currentAimMechanic != null && camera != null)
         {
-            bool hitSuccess = _currentAimMechanic.EvaluateShot(aimPoint, camera, _enemyLayer, out float hitProb, out RaycastHit hit);
-            Debug.Log($"Fired {_currentWeaponData.WeaponName}! Hit: {hitSuccess} (Hit Prob: {hitProb * 100:F1}%). Ammo remaining: {_currentAmmo}");
+            bool hitSuccess =
+                _currentAimMechanic.EvaluateShot(aimPoint, camera, _enemyLayer, out float hitProb, out RaycastHit hit);
+            Debug.Log(
+                $"Fired {_currentWeaponData.WeaponName}! Hit: {hitSuccess} (Hit Prob: {hitProb * 100:F1}%). Ammo remaining: {_currentAmmo}");
         }
         else
         {
@@ -177,7 +192,8 @@ public class WeaponManager : MonoBehaviour
         int availableReserveAmmo = 0;
         if (InventoryManager.Instance != null && InventoryManager.Instance.PlayerInventory != null)
         {
-            availableReserveAmmo = InventoryManager.Instance.PlayerInventory.GetTotalAmmoCount(_currentWeaponData.RequiredAmmoType);
+            availableReserveAmmo =
+                InventoryManager.Instance.PlayerInventory.GetTotalAmmoCount(_currentWeaponData.RequiredAmmoType);
         }
 
         if (availableReserveAmmo <= 0)
@@ -200,7 +216,8 @@ public class WeaponManager : MonoBehaviour
 
         if (InventoryManager.Instance != null && InventoryManager.Instance.PlayerInventory != null)
         {
-            consumedAmmo = InventoryManager.Instance.PlayerInventory.ConsumeAmmo(_currentWeaponData.RequiredAmmoType, ammoNeeded);
+            consumedAmmo =
+                InventoryManager.Instance.PlayerInventory.ConsumeAmmo(_currentWeaponData.RequiredAmmoType, ammoNeeded);
         }
 
         _currentAmmo += consumedAmmo;

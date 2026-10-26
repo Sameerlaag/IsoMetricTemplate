@@ -6,6 +6,7 @@ using UnityEngine.InputSystem;
 public class InputReader : ScriptableObject, PlayerActionsInputs.IPlayerActions
 {
     public Vector2 MoveInput { get; private set; }
+    public Vector2 LookInput { get; private set; }
 
     public Vector2 MousePosition { get; private set; }
     public bool IsSprinting { get; private set; }
@@ -117,5 +118,10 @@ public class InputReader : ScriptableObject, PlayerActionsInputs.IPlayerActions
     public void OnFire(InputAction.CallbackContext context)
     {
         OnFireWeaponPerformed?.Invoke();
+    }
+
+    public void OnLook(InputAction.CallbackContext context)
+    {
+        LookInput = context.ReadValue<Vector2>();
     }
 }

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0e81d09e728b4f939ae5b5abdbdcb455, type: 3}
   m_Name: Handgub
   m_EditorClassIdentifier: Assembly-CSharp::GunItem
-  <ID>k__BackingField: hand_gun
+  <ID>k__BackingField: handgun
   <DisplayName>k__BackingField: Handgun
   <ItemType>k__BackingField: 5
   <MaxStack>k__BackingField: 0
