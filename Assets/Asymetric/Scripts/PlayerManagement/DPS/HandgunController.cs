@@ -14,6 +14,10 @@ using UnityEngine;
 ///   - mandatory recovery: input is ignored (no spam, animation + audio can finish their kick)
 ///   - recovery window:    pressing fire retriggers animation / audio / blowback immediately
 ///   - after both:         back to Idle
+/// Holding the fire button auto-fires, one shot every time the mandatory recovery ends.
+///
+/// Hands container: blowback + walk sway are both applied to _handsContainer in LateUpdate.
+/// Use an object the Animator does NOT animate.
 ///
 /// Animator: fires the triggers "Draw", "Idle", "Shoot", "Hide" (+ optional "Reload").
 /// </summary>
@@ -46,24 +50,54 @@ public class HandgunController : MonoBehaviour
     [SerializeField] private float _reloadDuration = 1.8f;
 
     [Header("Fire Timing")]
-    [Tooltip("Right after a shot, fire input is ignored for this long.")]
+    [Tooltip("Hold the fire button to keep shooting.")]
+    [SerializeField] private bool _allowAutoFire = true;
+    [Tooltip("Right after a shot, fire input is ignored for this long. " +
+             "This is also the delay between shots while auto-firing.")]
     [SerializeField] private float _mandatoryRecovery = 0.10f;
     [Tooltip("After the mandatory recovery, firing again retriggers the shot immediately. " +
              "When this ends the gun returns to Idle.")]
     [SerializeField] private float _recoveryWindow = 0.15f;
 
-    [Header("Blowback (move the hands container)")]
+    [Header("Hands Container")]
     [Tooltip("Container holding the hands + gun. Use an object the Animator does NOT animate " +
              "(e.g. a parent 'HandsRecoil'), otherwise the Animator will overwrite the movement.")]
     [SerializeField] private Transform _handsContainer;
+
+    [Header("Blowback")]
     [Tooltip("Local-space offset at the peak of the recoil. -Z pushes the gun back toward the player.")]
     [SerializeField] private Vector3 _blowbackOffset = new Vector3(0f, 0.01f, -0.07f);
     [SerializeField] private float _blowbackKickTime = 0.04f;
     [SerializeField] private float _blowbackReturnTime = 0.14f;
 
+    [Header("Walk Sway")]
+    [SerializeField] private bool _enableWalkSway = true;
+    [Tooltip("X = side to side, Y = up/down (bobs twice per side-to-side cycle).")]
+    [SerializeField] private Vector2 _swayAmplitude = new Vector2(0.012f, 0.008f);
+    [Tooltip("Rocking (roll) in degrees. 0 = no rotation.")]
+    [SerializeField] private float _swayRollDegrees = 1.5f;
+    [Tooltip("Sway speed (radians/sec) when moving at the reference speed.")]
+    [SerializeField] private float _swayFrequency = 7f;
+    [Tooltip("Player speed at which the sway is at full strength (≈ your walk speed).")]
+    [SerializeField] private float _swayReferenceSpeed = 4f;
+    [Tooltip("How fast the sway fades in/out when you start/stop moving.")]
+    [SerializeField] private float _swayBlendSpeed = 6f;
+    [Tooltip("Sway strength while aiming (0 = none, 1 = same as walking).")]
+    [SerializeField, Range(0f, 1f)] private float _aimSwayMultiplier = 0.2f;
+
     [Header("Shooting")]
     [SerializeField] private float _range = 100f;
     [SerializeField] private LayerMask _hitMask = ~0;
+
+    [Header("Spread (degrees, cone half-angle)")]
+    [Tooltip("Aiming: spread when settled.")]
+    [SerializeField] private float _aimRestSpread = 0f;
+    [Tooltip("Aiming: spread right after a shot (or after starting to aim).")]
+    [SerializeField] private float _aimMaxSpread = 12f;
+    [Tooltip("Not aiming: spread when settled.")]
+    [SerializeField] private float _hipRestSpread = 8f;
+    [Tooltip("Not aiming: spread right after a shot (or after stopping aiming).")]
+    [SerializeField] private float _hipMaxSpread = 22f;
 
     [Header("Animator Triggers (leave Reload empty to skip)")]
     [SerializeField] private string _drawTrigger = "Draw";
@@ -80,16 +114,37 @@ public class HandgunController : MonoBehaviour
     [SerializeField] private AudioClip _dryFireSound;
     [SerializeField] private AudioClip _reloadSound;
     [SerializeField] private ParticleSystem _muzzleFlash;
+    [Tooltip("Plays on every shot.")]
+    [SerializeField] private ParticleSystem _bulletTrail;
+    [Tooltip("Plays a while after a shot, and is stopped/cancelled if another shot is fired. " +
+             "Set Looping OFF on this particle system.")]
+    [SerializeField] private ParticleSystem _postFireSmoke;
+    [SerializeField] private float _smokeDelay = 1f;
     [SerializeField] private Light _muzzleLight;
     [SerializeField] private float _muzzleLightDuration = 0.05f;
 
     private GunState _state;
     private float _timer;
     private float _timeSinceShot;
+    private int _lastFireFrame = -1;
+
+    // Spread: after a "kick" (shot or aim toggle) it holds at max for _mandatoryRecovery,
+    // then eases down to rest over _recoveryWindow.
+    private float _timeSinceSpreadKick = 999f; // start settled
+    private float _lastBroadcastSpread = -1f;
+    private bool _spreadDirty = true;
     private float _muzzleLightTimer;
 
+    // Hands container offsets (combined in LateUpdate)
     private Vector3 _handsRestLocalPos;
+    private Quaternion _handsRestLocalRot;
+    private Vector3 _recoilOffset;
+    private Vector3 _swayOffset;
+    private float _swayRoll;
+    private float _swayIntensity;
+    private float _swayPhase;
     private Coroutine _blowbackRoutine;
+    private Coroutine _smokeRoutine;
 
     private int _drawHash, _idleHash, _shootHash, _hideHash, _reloadHash;
 
@@ -103,6 +158,36 @@ public class HandgunController : MonoBehaviour
 
     /// <summary>(currentAmmo, reserveAmmo) - hook your HUD here.</summary>
     public event Action<int, int> OnAmmoChanged;
+
+    /// <summary>(currentSpread, restSpread, maxSpread) in degrees - raised whenever the spread changes.</summary>
+    public event Action<float, float, float> OnSpreadChanged;
+
+    /// <summary>Reload started; the argument is its duration in seconds.</summary>
+    public event Action<float> OnReloadBegan;
+
+    /// <summary>Reload ended; true = completed, false = interrupted.</summary>
+    public event Action<bool> OnReloadEnded;
+
+    public bool IsAiming => _player != null && _player.IsAiming;
+    public float RestSpread => IsAiming ? _aimRestSpread : _hipRestSpread;
+    public float MaxSpread => IsAiming ? _aimMaxSpread : _hipMaxSpread;
+
+    /// <summary>Spread (degrees) a shot fired right now would have.</summary>
+    public float CurrentSpread
+    {
+        get
+        {
+            float rest = RestSpread;
+            float max = MaxSpread;
+            float t = _timeSinceSpreadKick;
+
+            if (t <= _mandatoryRecovery) return max;
+            if (_recoveryWindow <= 0f) return rest;
+
+            float k = Mathf.Clamp01((t - _mandatoryRecovery) / _recoveryWindow);
+            return Mathf.Lerp(max, rest, k);
+        }
+    }
 
     private void Awake()
     {
@@ -118,7 +203,12 @@ public class HandgunController : MonoBehaviour
         CurrentAmmo = _magazineSize;
         ReserveAmmo = _startingReserve;
 
-        if (_handsContainer != null) _handsRestLocalPos = _handsContainer.localPosition;
+        if (_handsContainer != null)
+        {
+            _handsRestLocalPos = _handsContainer.localPosition;
+            _handsRestLocalRot = _handsContainer.localRotation;
+        }
+
         if (_muzzleLight != null) _muzzleLight.enabled = false;
     }
 
@@ -126,15 +216,25 @@ public class HandgunController : MonoBehaviour
     {
         _inputReader.OnFireWeaponPerformed += HandleFire;
         _inputReader.OnReloadStarted += HandleReload;
+        if (_player != null) _player.OnAimStateChanged += HandleAimStateChanged;
     }
 
     private void OnDisable()
     {
         _inputReader.OnFireWeaponPerformed -= HandleFire;
         _inputReader.OnReloadStarted -= HandleReload;
+        if (_player != null) _player.OnAimStateChanged -= HandleAimStateChanged;
 
         _blowbackRoutine = null;
-        if (_handsContainer != null) _handsContainer.localPosition = _handsRestLocalPos;
+        _smokeRoutine = null;
+        _recoilOffset = Vector3.zero;
+        _swayOffset = Vector3.zero;
+        _swayRoll = 0f;
+        if (_handsContainer != null)
+        {
+            _handsContainer.localPosition = _handsRestLocalPos;
+            _handsContainer.localRotation = _handsRestLocalRot;
+        }
     }
 
     private void Start()
@@ -148,6 +248,7 @@ public class HandgunController : MonoBehaviour
     {
         UpdateMuzzleLight();
 
+        _timeSinceSpreadKick = Mathf.Min(_timeSinceSpreadKick + Time.deltaTime, 1000f);
         _timer -= Time.deltaTime;
         bool sprinting = _player != null && _player.IsSprinting;
 
@@ -177,6 +278,7 @@ public class HandgunController : MonoBehaviour
                 else if (_timer <= 0f)
                 {
                     FinishReload();
+                    OnReloadEnded?.Invoke(true);
                     ReturnToIdle();
                 }
                 break;
@@ -193,17 +295,28 @@ public class HandgunController : MonoBehaviour
                 if (!sprinting) StartDraw();
                 break;
         }
+
+        TryAutoFire();
+        BroadcastSpread();
+    }
+
+    private void LateUpdate()
+    {
+        if (_handsContainer == null) return;
+
+        UpdateWalkSway();
+
+        _handsContainer.localPosition = _handsRestLocalPos + _recoilOffset + _swayOffset;
+        _handsContainer.localRotation = _handsRestLocalRot * Quaternion.Euler(0f, 0f, _swayRoll);
     }
 
     // ------------------------------------------------------------------
     // Input
     // ------------------------------------------------------------------
+    /// <summary>Fire button pressed (single shot, dry-fire click, retrigger in the recovery window).</summary>
     private void HandleFire()
     {
-        // Allowed when idle, or during a shot's recovery window (after the mandatory recovery)
-        bool canFire = _state == GunState.Idle ||
-                       (_state == GunState.Shooting && _timeSinceShot >= _mandatoryRecovery);
-        if (!canFire) return;
+        if (!CanFireNow()) return;
 
         if (CurrentAmmo <= 0)
         {
@@ -219,10 +332,29 @@ public class HandgunController : MonoBehaviour
         Fire();
     }
 
+    /// <summary>Fire button held: keep shooting every time the mandatory recovery ends.</summary>
+    private void TryAutoFire()
+    {
+        if (!_allowAutoFire || !_inputReader.IsFiring) return;
+        if (CurrentAmmo <= 0) return; // reload / dry-fire is handled on the press only
+        if (!CanFireNow()) return;
+
+        Fire();
+    }
+
     private void HandleReload()
     {
         if (_state != GunState.Idle) return;
         TryStartReload();
+    }
+
+    /// <summary>Idle, or in a shot's recovery window (after the mandatory recovery is over).</summary>
+    private bool CanFireNow()
+    {
+        if (Time.frameCount == _lastFireFrame) return false; // never two shots in one frame
+
+        return _state == GunState.Idle ||
+               (_state == GunState.Shooting && _timeSinceShot >= _mandatoryRecovery);
     }
 
     // ------------------------------------------------------------------
@@ -230,8 +362,11 @@ public class HandgunController : MonoBehaviour
     // ------------------------------------------------------------------
     private void Fire()
     {
+        float spread = CurrentSpread; // the shot uses the spread as it is right now
+
         CurrentAmmo--;
         _state = GunState.Shooting;
+        _lastFireFrame = Time.frameCount;
         _timeSinceShot = 0f;
         _timer = _mandatoryRecovery + _recoveryWindow;
 
@@ -241,20 +376,59 @@ public class HandgunController : MonoBehaviour
 
         PlayFireEffects();
         PlayBlowback();
-        FireBullet();
+        FireBullet(spread);
+        KickSpread(); // next shot starts from max again
         NotifyAmmo();
     }
 
-    private void FireBullet()
+    private void FireBullet(float spreadDegrees)
     {
         Transform origin = _fireOrigin != null ? _fireOrigin : transform;
-        if (Physics.Raycast(origin.position, origin.forward, out RaycastHit hit, _range, _hitMask,
+        Vector3 direction = GetSpreadDirection(origin, spreadDegrees);
+
+        if (Physics.Raycast(origin.position, direction, out RaycastHit hit, _range, _hitMask,
                 QueryTriggerInteraction.Ignore))
         {
             // TODO: apply damage / spawn impact decal here, e.g.
             // hit.collider.GetComponentInParent<IDamageable>()?.TakeDamage(damage);
             Debug.DrawLine(origin.position, hit.point, Color.red, 0.5f);
         }
+    }
+
+    // ------------------------------------------------------------------
+    // Spread
+    // ------------------------------------------------------------------
+    /// <summary>Random direction inside a cone of the given half-angle around the origin's forward.</summary>
+    private static Vector3 GetSpreadDirection(Transform origin, float spreadDegrees)
+    {
+        if (spreadDegrees <= 0.001f) return origin.forward;
+
+        float angle = spreadDegrees * Mathf.Sqrt(UnityEngine.Random.value); // uniform over the cone's disc
+        float roll = UnityEngine.Random.value * 360f;
+
+        Quaternion local = Quaternion.AngleAxis(roll, Vector3.forward) *
+                           Quaternion.AngleAxis(angle, Vector3.right);
+        return origin.rotation * (local * Vector3.forward);
+    }
+
+    /// <summary>Jump to max spread; it then holds for the mandatory recovery and eases down over the window.</summary>
+    private void KickSpread()
+    {
+        _timeSinceSpreadKick = 0f;
+        _spreadDirty = true;
+    }
+
+    /// <summary>Starting or stopping aiming jumps the spread to the new mode's max.</summary>
+    private void HandleAimStateChanged(bool aiming) => KickSpread();
+
+    private void BroadcastSpread()
+    {
+        float current = CurrentSpread;
+        if (!_spreadDirty && Mathf.Abs(current - _lastBroadcastSpread) < 0.001f) return;
+
+        _spreadDirty = false;
+        _lastBroadcastSpread = current;
+        OnSpreadChanged?.Invoke(current, RestSpread, MaxSpread);
     }
 
     private bool TryStartReload()
@@ -266,6 +440,7 @@ public class HandgunController : MonoBehaviour
         _timer = _reloadDuration;
         if (_reloadHash != 0) SetTrigger(_reloadHash);
         PlaySound(_reloadSound);
+        OnReloadBegan?.Invoke(_reloadDuration);
         return true;
     }
 
@@ -289,7 +464,11 @@ public class HandgunController : MonoBehaviour
     private void StartHide()
     {
         // Cut the reload sound if we are interrupting a reload
-        if (_state == GunState.Reloading && _audioSource != null) _audioSource.Stop();
+        if (_state == GunState.Reloading)
+        {
+            if (_audioSource != null) _audioSource.Stop();
+            OnReloadEnded?.Invoke(false);
+        }
 
         _state = GunState.Hiding;
         _timer = _hideDuration;
@@ -306,21 +485,21 @@ public class HandgunController : MonoBehaviour
     }
 
     // ------------------------------------------------------------------
-    // Blowback
+    // Blowback (writes _recoilOffset, applied in LateUpdate)
     // ------------------------------------------------------------------
     private void PlayBlowback()
     {
         if (_handsContainer == null) return;
 
-        // Restart from wherever the hands currently are, so rapid shots don't snap
+        // Restart from the current offset, so rapid shots don't snap
         if (_blowbackRoutine != null) StopCoroutine(_blowbackRoutine);
         _blowbackRoutine = StartCoroutine(BlowbackRoutine());
     }
 
     private IEnumerator BlowbackRoutine()
     {
-        Vector3 startPos = _handsContainer.localPosition;
-        Vector3 peakPos = _handsRestLocalPos + _blowbackOffset; // absolute target: never accumulates
+        Vector3 start = _recoilOffset;
+        Vector3 peak = _blowbackOffset; // absolute target: never accumulates
 
         // Kick back (fast, ease-out)
         float t = 0f;
@@ -329,7 +508,7 @@ public class HandgunController : MonoBehaviour
         {
             t += Time.deltaTime / kick;
             float eased = 1f - Mathf.Pow(1f - Mathf.Clamp01(t), 2f);
-            _handsContainer.localPosition = Vector3.LerpUnclamped(startPos, peakPos, eased);
+            _recoilOffset = Vector3.LerpUnclamped(start, peak, eased);
             yield return null;
         }
 
@@ -340,12 +519,36 @@ public class HandgunController : MonoBehaviour
         {
             t += Time.deltaTime / back;
             float eased = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t));
-            _handsContainer.localPosition = Vector3.LerpUnclamped(peakPos, _handsRestLocalPos, eased);
+            _recoilOffset = Vector3.LerpUnclamped(peak, Vector3.zero, eased);
             yield return null;
         }
 
-        _handsContainer.localPosition = _handsRestLocalPos;
+        _recoilOffset = Vector3.zero;
         _blowbackRoutine = null;
+    }
+
+    // ------------------------------------------------------------------
+    // Walk sway (writes _swayOffset / _swayRoll, applied in LateUpdate)
+    // ------------------------------------------------------------------
+    private void UpdateWalkSway()
+    {
+        float speed = _player != null ? _player.CurrentSpeed : 0f;
+        float speedFactor = Mathf.Clamp(speed / Mathf.Max(0.01f, _swayReferenceSpeed), 0f, 1.3f);
+
+        // No sway while the weapon is being put away / is hidden
+        bool swayAllowed = _enableWalkSway && _state != GunState.Hiding && _state != GunState.Hidden;
+
+        float target = swayAllowed ? speedFactor : 0f;
+        if (_player != null && _player.IsAiming) target *= _aimSwayMultiplier;
+
+        _swayIntensity = Mathf.MoveTowards(_swayIntensity, target, _swayBlendSpeed * Time.deltaTime);
+        _swayPhase = Mathf.Repeat(_swayPhase + Time.deltaTime * _swayFrequency * speedFactor, Mathf.PI * 2f);
+
+        float x = Mathf.Sin(_swayPhase) * _swayAmplitude.x;
+        float y = Mathf.Sin(_swayPhase * 2f) * _swayAmplitude.y; // vertical bob = twice per cycle
+
+        _swayOffset = new Vector3(x, y, 0f) * _swayIntensity;
+        _swayRoll = Mathf.Sin(_swayPhase) * _swayRollDegrees * _swayIntensity;
     }
 
     // ------------------------------------------------------------------
@@ -373,6 +576,37 @@ public class HandgunController : MonoBehaviour
             _muzzleLight.enabled = true;
             _muzzleLightTimer = _muzzleLightDuration;
         }
+
+        PlayBulletTrail();
+        ScheduleFireSmoke();
+    }
+
+    private void PlayBulletTrail()
+    {
+        if (_bulletTrail == null) return;
+
+        // Stop emitting (without clearing) then Play: restarts the emission on every shot,
+        // while trails from previous shots finish on their own.
+        _bulletTrail.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+        _bulletTrail.Play();
+    }
+
+    /// <summary>Smoke starts _smokeDelay seconds after the shot; any new shot cancels it and starts the wait over.</summary>
+    private void ScheduleFireSmoke()
+    {
+        if (_postFireSmoke == null) return;
+
+        if (_smokeRoutine != null) StopCoroutine(_smokeRoutine);
+        _postFireSmoke.Stop(true, ParticleSystemStopBehavior.StopEmitting); // existing smoke fades out
+        _smokeRoutine = StartCoroutine(FireSmokeRoutine());
+    }
+
+    private IEnumerator FireSmokeRoutine()
+    {
+        yield return new WaitForSeconds(_smokeDelay);
+
+        _postFireSmoke.Play();
+        _smokeRoutine = null;
     }
 
     private void UpdateMuzzleLight()

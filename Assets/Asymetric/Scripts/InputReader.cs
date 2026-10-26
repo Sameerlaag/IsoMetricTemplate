@@ -12,6 +12,8 @@ public class InputReader : ScriptableObject, PlayerActionsInputs.IPlayerActions
     public bool IsSprinting { get; private set; }
     public bool IsCrouching { get; private set; }
     public bool IsAiming { get; private set; }
+    public bool IsFiring = false;
+
     public event Action OnInteractPerformed;
     public event Action OnInteractStarted;
     public event Action OnInteractCanceled;
@@ -117,7 +119,14 @@ public class InputReader : ScriptableObject, PlayerActionsInputs.IPlayerActions
 
     public void OnFire(InputAction.CallbackContext context)
     {
+        if (context.canceled)
+        {
+            IsFiring = false;
+            return;
+        }
+
         OnFireWeaponPerformed?.Invoke();
+        IsFiring = true;
     }
 
     public void OnLook(InputAction.CallbackContext context)

@@ -5,6 +5,7 @@ public class FlashlightController : MonoBehaviour
 {
     [Header("Lights")] [SerializeField] private Light mainLight;
     [SerializeField] private Light longRangeLight;
+    [SerializeField] private Light gunLight;
 
     [Header("Input")] [SerializeField] private KeyCode toggleKey = KeyCode.F;
     [SerializeField] private bool useKeyboardInput = true;
@@ -82,7 +83,7 @@ public class FlashlightController : MonoBehaviour
         if (rayOrigin == null && Camera.main != null)
             rayOrigin = Camera.main.transform;
 
-        isOn = false;
+        isOn = true;
         ApplyLightState();
         ScheduleNextFlicker();
     }
@@ -296,6 +297,11 @@ public class FlashlightController : MonoBehaviour
             longRangeLight.intensity = isOn
                 ? nextLongRangeIntensity
                 : 0f;
+        }
+
+        if (gunLight != null)
+        {
+            gunLight.enabled = isOn;
         }
     }
 

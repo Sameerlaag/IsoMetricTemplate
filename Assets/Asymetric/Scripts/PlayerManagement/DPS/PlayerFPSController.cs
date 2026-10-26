@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 /// <summary>
@@ -74,6 +75,9 @@ public class PlayerFPSController : MonoBehaviour
     public bool IsAiming { get; private set; }
     public float CurrentSpeed => _horizontalVelocity.magnitude;
 
+    /// <summary>Raised when the effective aiming state changes (true = started aiming).</summary>
+    public event Action<bool> OnAimStateChanged;
+
     private void Awake()
     {
         _characterController = GetComponent<CharacterController>();
@@ -137,7 +141,13 @@ public class PlayerFPSController : MonoBehaviour
         if (!aimHeld) _aimSuppressed = false;
 
         IsSprinting = sprintWanted && !_sprintSuppressed;
-        IsAiming = aimHeld && !_aimSuppressed && weaponCanAim && !IsSprinting;
+
+        bool aiming = aimHeld && !_aimSuppressed && weaponCanAim && !IsSprinting;
+        if (aiming != IsAiming)
+        {
+            IsAiming = aiming;
+            OnAimStateChanged?.Invoke(aiming);
+        }
 
         _prevSprintWanted = sprintWanted;
         _prevAimHeld = aimHeld;
