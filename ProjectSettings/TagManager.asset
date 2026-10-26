@@ -8,12 +8,12 @@ TagManager:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - Arms
   - Water
   - UI
   - Interactable
   - Enemy
-  - 
+  - PostProcesss
   - 
   - 
   - 
@@ -44,7 +44,7 @@ TagManager:
   m_RenderingLayers:
   - Default
   - Light Layer 1
-  - Light Layer 2
+  - Arms
   - Light Layer 3
   - Light Layer 4
   - Light Layer 5

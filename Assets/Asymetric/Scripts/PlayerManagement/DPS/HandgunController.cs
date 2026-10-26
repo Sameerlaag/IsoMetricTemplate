@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using UnityEngine;
 
 /// <summary>
@@ -8,8 +9,13 @@ using UnityEngine;
 ///                      Idle -> Reloading -> Idle
 ///          (any)  -> Hiding -> Hidden  (when sprinting)   Hidden -> Drawing (when sprint stops)
 ///
-/// Animator: this script fires the triggers "Draw", "Idle", "Shoot", "Hide" (+ optional "Reload").
-/// State lengths are driven by the timers below, so no animation events are required.
+/// Fire timing (per shot):
+///   [ mandatory recovery ][ recovery window ]
+///   - mandatory recovery: input is ignored (no spam, animation + audio can finish their kick)
+///   - recovery window:    pressing fire retriggers animation / audio / blowback immediately
+///   - after both:         back to Idle
+///
+/// Animator: fires the triggers "Draw", "Idle", "Shoot", "Hide" (+ optional "Reload").
 /// </summary>
 public class HandgunController : MonoBehaviour
 {
@@ -37,8 +43,23 @@ public class HandgunController : MonoBehaviour
     [Header("Timings (seconds)")]
     [SerializeField] private float _drawDuration = 0.6f;
     [SerializeField] private float _hideDuration = 0.35f;
-    [SerializeField] private float _fireCooldown = 0.25f;
     [SerializeField] private float _reloadDuration = 1.8f;
+
+    [Header("Fire Timing")]
+    [Tooltip("Right after a shot, fire input is ignored for this long.")]
+    [SerializeField] private float _mandatoryRecovery = 0.10f;
+    [Tooltip("After the mandatory recovery, firing again retriggers the shot immediately. " +
+             "When this ends the gun returns to Idle.")]
+    [SerializeField] private float _recoveryWindow = 0.15f;
+
+    [Header("Blowback (move the hands container)")]
+    [Tooltip("Container holding the hands + gun. Use an object the Animator does NOT animate " +
+             "(e.g. a parent 'HandsRecoil'), otherwise the Animator will overwrite the movement.")]
+    [SerializeField] private Transform _handsContainer;
+    [Tooltip("Local-space offset at the peak of the recoil. -Z pushes the gun back toward the player.")]
+    [SerializeField] private Vector3 _blowbackOffset = new Vector3(0f, 0.01f, -0.07f);
+    [SerializeField] private float _blowbackKickTime = 0.04f;
+    [SerializeField] private float _blowbackReturnTime = 0.14f;
 
     [Header("Shooting")]
     [SerializeField] private float _range = 100f;
@@ -54,6 +75,8 @@ public class HandgunController : MonoBehaviour
     [Header("Effects (placeholders - all optional)")]
     [SerializeField] private AudioSource _audioSource;
     [SerializeField] private AudioClip _fireSound;
+    [Tooltip("Random pitch +/- applied to each shot. 0 = identical every time.")]
+    [SerializeField, Range(0f, 0.2f)] private float _firePitchVariation = 0.04f;
     [SerializeField] private AudioClip _dryFireSound;
     [SerializeField] private AudioClip _reloadSound;
     [SerializeField] private ParticleSystem _muzzleFlash;
@@ -62,7 +85,11 @@ public class HandgunController : MonoBehaviour
 
     private GunState _state;
     private float _timer;
+    private float _timeSinceShot;
     private float _muzzleLightTimer;
+
+    private Vector3 _handsRestLocalPos;
+    private Coroutine _blowbackRoutine;
 
     private int _drawHash, _idleHash, _shootHash, _hideHash, _reloadHash;
 
@@ -91,6 +118,7 @@ public class HandgunController : MonoBehaviour
         CurrentAmmo = _magazineSize;
         ReserveAmmo = _startingReserve;
 
+        if (_handsContainer != null) _handsRestLocalPos = _handsContainer.localPosition;
         if (_muzzleLight != null) _muzzleLight.enabled = false;
     }
 
@@ -104,6 +132,9 @@ public class HandgunController : MonoBehaviour
     {
         _inputReader.OnFireWeaponPerformed -= HandleFire;
         _inputReader.OnReloadStarted -= HandleReload;
+
+        _blowbackRoutine = null;
+        if (_handsContainer != null) _handsContainer.localPosition = _handsRestLocalPos;
     }
 
     private void Start()
@@ -132,6 +163,7 @@ public class HandgunController : MonoBehaviour
                 break;
 
             case GunState.Shooting:
+                _timeSinceShot += Time.deltaTime;
                 if (sprinting) StartHide();
                 else if (_timer <= 0f) ReturnToIdle();
                 break;
@@ -168,13 +200,19 @@ public class HandgunController : MonoBehaviour
     // ------------------------------------------------------------------
     private void HandleFire()
     {
-        if (_state != GunState.Idle) return;
+        // Allowed when idle, or during a shot's recovery window (after the mandatory recovery)
+        bool canFire = _state == GunState.Idle ||
+                       (_state == GunState.Shooting && _timeSinceShot >= _mandatoryRecovery);
+        if (!canFire) return;
 
         if (CurrentAmmo <= 0)
         {
             // Empty: dry fire click, then reload
-            PlaySound(_dryFireSound);
-            if (!TryStartReload()) return;
+            if (_state == GunState.Idle)
+            {
+                PlaySound(_dryFireSound);
+                TryStartReload();
+            }
             return;
         }
 
@@ -194,10 +232,15 @@ public class HandgunController : MonoBehaviour
     {
         CurrentAmmo--;
         _state = GunState.Shooting;
-        _timer = _fireCooldown;
+        _timeSinceShot = 0f;
+        _timer = _mandatoryRecovery + _recoveryWindow;
+
+        // Retrigger: restarts the Shoot animation even if it is already playing
+        // (needs "Can Transition To Self" enabled on the Any State -> Shoot transition)
         SetTrigger(_shootHash);
 
         PlayFireEffects();
+        PlayBlowback();
         FireBullet();
         NotifyAmmo();
     }
@@ -245,6 +288,9 @@ public class HandgunController : MonoBehaviour
 
     private void StartHide()
     {
+        // Cut the reload sound if we are interrupting a reload
+        if (_state == GunState.Reloading && _audioSource != null) _audioSource.Stop();
+
         _state = GunState.Hiding;
         _timer = _hideDuration;
         SetTrigger(_hideHash);
@@ -260,14 +306,67 @@ public class HandgunController : MonoBehaviour
     }
 
     // ------------------------------------------------------------------
+    // Blowback
+    // ------------------------------------------------------------------
+    private void PlayBlowback()
+    {
+        if (_handsContainer == null) return;
+
+        // Restart from wherever the hands currently are, so rapid shots don't snap
+        if (_blowbackRoutine != null) StopCoroutine(_blowbackRoutine);
+        _blowbackRoutine = StartCoroutine(BlowbackRoutine());
+    }
+
+    private IEnumerator BlowbackRoutine()
+    {
+        Vector3 startPos = _handsContainer.localPosition;
+        Vector3 peakPos = _handsRestLocalPos + _blowbackOffset; // absolute target: never accumulates
+
+        // Kick back (fast, ease-out)
+        float t = 0f;
+        float kick = Mathf.Max(0.001f, _blowbackKickTime);
+        while (t < 1f)
+        {
+            t += Time.deltaTime / kick;
+            float eased = 1f - Mathf.Pow(1f - Mathf.Clamp01(t), 2f);
+            _handsContainer.localPosition = Vector3.LerpUnclamped(startPos, peakPos, eased);
+            yield return null;
+        }
+
+        // Return to rest (slower, smooth)
+        t = 0f;
+        float back = Mathf.Max(0.001f, _blowbackReturnTime);
+        while (t < 1f)
+        {
+            t += Time.deltaTime / back;
+            float eased = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t));
+            _handsContainer.localPosition = Vector3.LerpUnclamped(peakPos, _handsRestLocalPos, eased);
+            yield return null;
+        }
+
+        _handsContainer.localPosition = _handsRestLocalPos;
+        _blowbackRoutine = null;
+    }
+
+    // ------------------------------------------------------------------
     // Effects (placeholders)
     // ------------------------------------------------------------------
     private void PlayFireEffects()
     {
         // TODO: replace with your final sound / VFX
-        PlaySound(_fireSound);
 
-        if (_muzzleFlash != null) _muzzleFlash.Play();
+        // No Stop(): PlayOneShot layers, so the previous shot's tail keeps playing under the new one
+        if (_audioSource != null && _fireSound != null)
+        {
+            _audioSource.pitch = UnityEngine.Random.Range(1f - _firePitchVariation, 1f + _firePitchVariation);
+            _audioSource.PlayOneShot(_fireSound);
+        }
+
+        if (_muzzleFlash != null)
+        {
+            _muzzleFlash.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            _muzzleFlash.Play();
+        }
 
         if (_muzzleLight != null)
         {

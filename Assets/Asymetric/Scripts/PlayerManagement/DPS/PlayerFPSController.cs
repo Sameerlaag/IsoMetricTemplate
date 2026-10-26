@@ -23,6 +23,7 @@ public class PlayerFPSController : MonoBehaviour
     [SerializeField] private Transform _cameraPivot;
     [SerializeField] private Camera _mainCamera;
     [SerializeField] private HandgunController _weapon;
+    [SerializeField] private FlashlightController _flashlight;
 
     [Header("Look")]
     [SerializeField] private float _lookSensitivity = 0.12f;
@@ -90,8 +91,20 @@ public class PlayerFPSController : MonoBehaviour
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
         }
+        _inputReader.OnEquipedItemPerformed += HandleEquipment;
     }
 
+    private void OnDisable()
+    {
+        _inputReader.OnEquipedItemPerformed -= HandleEquipment;
+    }
+
+    
+    private void HandleEquipment()
+    {
+        _flashlight.Switch();
+    }
+    
     private void Update()
     {
         UpdateGroundInfo();
