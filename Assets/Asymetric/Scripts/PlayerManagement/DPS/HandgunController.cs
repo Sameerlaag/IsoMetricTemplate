@@ -87,6 +87,8 @@ public class HandgunController : MonoBehaviour
 
     [Header("Shooting")]
     [SerializeField] private float _range = 100f;
+    [SerializeField] private float _damage = 25f;
+    [Tooltip("Include the enemy HITBOX layer, exclude the enemy root/NavMesh layer.")]
     [SerializeField] private LayerMask _hitMask = ~0;
 
     [Header("Spread (degrees, cone half-angle)")]
@@ -389,10 +391,31 @@ public class HandgunController : MonoBehaviour
         if (Physics.Raycast(origin.position, direction, out RaycastHit hit, _range, _hitMask,
                 QueryTriggerInteraction.Ignore))
         {
-            // TODO: apply damage / spawn impact decal here, e.g.
-            // hit.collider.GetComponentInParent<IDamageable>()?.TakeDamage(damage);
             Debug.DrawLine(origin.position, hit.point, Color.red, 0.5f);
+            ResolveHit(hit, direction);
         }
+    }
+
+    /// <summary>Enemies / props react by themselves; everything else is a plain surface.</summary>
+    private void ResolveHit(RaycastHit hit, Vector3 direction)
+    {
+        IBulletTarget target = hit.collider.GetComponentInParent<IBulletTarget>();
+        if (target != null)
+        {
+            target.OnBulletHit(new BulletHitInfo
+            {
+                Collider = hit.collider,
+                Point = hit.point,
+                Normal = hit.normal,
+                Direction = direction,
+                Damage = _damage,
+                Shooter = transform
+            });
+            return;
+        }
+
+        if (BulletImpactManager.Instance != null)
+            BulletImpactManager.Instance.PlayImpact(hit.collider.tag, hit.point, hit.normal);
     }
 
     // ------------------------------------------------------------------

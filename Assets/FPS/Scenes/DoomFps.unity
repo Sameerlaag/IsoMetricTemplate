@@ -2753,7 +2753,7 @@ ParticleSystem:
   emitterVelocityMode: 1
   looping: 0
   prewarm: 0
-  playOnAwake: 1
+  playOnAwake: 0
   useUnscaledTime: 0
   autoRandomSeed: 1
   startDelay:
@@ -8136,6 +8136,7 @@ GameObject:
   m_Component:
   - component: {fileID: 989837415}
   - component: {fileID: 989837414}
+  - component: {fileID: 989837416}
   m_Layer: 0
   m_Name: MonsterManager
   m_TagString: Untagged
@@ -8175,17 +8176,17 @@ MonoBehaviour:
   playerFlashlight: {fileID: 1826665263}
   flashlightSightMultiplier: 1.75
   initialMonsterCount: 4
-  spawnInterval: 0
+  spawnInterval: 2
   maxMonsters: 12
   movementMode: 0
-  walkingNoiseRange: 4
-  runningNoiseRange: 12
+  walkingNoiseRange: 3
+  runningNoiseRange: 7
   sneakingNoiseRange: 1
-  normalSightRange: 16
+  normalSightRange: 12
   sneakingSightRange: 5
   obstructionMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 1023
   eyeHeight: 1.5
 --- !u!4 &989837415
 Transform:
@@ -8216,6 +8217,41 @@ Transform:
   - {fileID: 1181917328}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &989837416
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 989837413}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 426e1a195116489bb23ba5e1d1fe2caa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BulletImpactManager
+  defaultImpact:
+    surfaceTag: Default
+    sfx:
+    - {fileID: 8300000, guid: 4da14125ee2d42848879d3a8d145ac35, type: 3}
+    volume: 1
+    vfxPrefab: {fileID: 1375047863492676726, guid: bcbfdd7b4d6fa494abf5c1e94d2e90e7, type: 3}
+    vfxLifetime: 1
+    bulletHolePrefab: {fileID: 1980796587542681786, guid: fff961185191b8948b9c2bbb68cbf5c8, type: 3}
+  surfaces:
+  - surfaceTag: Metal
+    sfx:
+    - {fileID: 8300000, guid: ad15a82c9ff0394418457ef849bf03ba, type: 3}
+    volume: 1
+    vfxPrefab: {fileID: 1375047863492676726, guid: bcbfdd7b4d6fa494abf5c1e94d2e90e7, type: 3}
+    vfxLifetime: 1
+    bulletHolePrefab: {fileID: 1980796587542681786, guid: fff961185191b8948b9c2bbb68cbf5c8, type: 3}
+  audioVoices: 16
+  pitchVariation: 0.05
+  minDistance: 2
+  maxDistance: 40
+  sfxGroup: {fileID: 24300002, guid: 314863868d9e4eb43b068252f03f6f75, type: 2}
+  maxDecals: 30
+  surfaceOffset: 0.01
 --- !u!1 &1089767730
 GameObject:
   m_ObjectHideFlags: 0
@@ -14633,9 +14669,10 @@ MonoBehaviour:
   _swayBlendSpeed: 6
   _aimSwayMultiplier: 0.2
   _range: 100
+  _damage: 25
   _hitMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 1879
   _aimRestSpread: 0
   _aimMaxSpread: 12
   _hipRestSpread: 8
@@ -23173,7 +23210,7 @@ GameObject:
   - component: {fileID: 971378981}
   m_Layer: 8
   m_Name: mail box
-  m_TagString: Untagged
+  m_TagString: Metal
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -23785,7 +23822,7 @@ GameObject:
   - component: {fileID: 251833300}
   m_Layer: 8
   m_Name: Bannar_008
-  m_TagString: Untagged
+  m_TagString: Metal
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -24196,7 +24233,7 @@ GameObject:
   - component: {fileID: 1916759655}
   m_Layer: 8
   m_Name: HotDogStand_003
-  m_TagString: Untagged
+  m_TagString: Metal
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -27009,7 +27046,7 @@ GameObject:
   - component: {fileID: 1944791145}
   m_Layer: 8
   m_Name: fire hydrant
-  m_TagString: Untagged
+  m_TagString: Metal
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -27581,7 +27618,7 @@ GameObject:
   - component: {fileID: 1326996190}
   m_Layer: 8
   m_Name: ' mail box'
-  m_TagString: Untagged
+  m_TagString: Metal
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -27601,7 +27638,7 @@ GameObject:
   - component: {fileID: 17312344}
   m_Layer: 8
   m_Name: electric box
-  m_TagString: Untagged
+  m_TagString: Metal
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -28405,7 +28442,7 @@ GameObject:
   - component: {fileID: 2062304386}
   m_Layer: 8
   m_Name: HotDogStand_004
-  m_TagString: Untagged
+  m_TagString: Metal
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -29334,7 +29371,7 @@ GameObject:
   - component: {fileID: 771574652}
   m_Layer: 8
   m_Name: fire hydrant001
-  m_TagString: Untagged
+  m_TagString: Metal
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -30635,7 +30672,7 @@ GameObject:
   - component: {fileID: 1876007808}
   m_Layer: 8
   m_Name: electric box001
-  m_TagString: Untagged
+  m_TagString: Metal
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

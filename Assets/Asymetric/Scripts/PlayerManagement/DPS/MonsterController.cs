@@ -21,7 +21,7 @@ public class MonsterController : MonoBehaviour
     private NavMeshAgent agent;
 
     [SerializeField] private Animator animator;
-
+    [SerializeField] private PlayerHealth playerHealth;
     [Header("Movement")] [SerializeField] private float walkSpeed = 1.5f;
     [SerializeField] private float runSpeed = 4.5f;
     [SerializeField] private float wanderRadius = 6f;
@@ -45,10 +45,36 @@ public class MonsterController : MonoBehaviour
     [SerializeField] private float attackLockout = 1f;
 
     private string currentAnimationTrigger;
-    
+
     [Header("Hearing")] [SerializeField] private float gunshotHearingRange = 25f;
 
     [Header("Recovery")] [SerializeField] private float recoveryTime = 6f;
+
+    [Header("Bullet Hits")] [SerializeField]
+    private MonsterHitReaction hitReaction;
+
+    [Tooltip("A random clip is played at the hit point.")] [SerializeField]
+    private AudioClip[] hitSounds;
+
+    [SerializeField, Range(0f, 1f)] private float hitSoundVolume = 1f;
+
+    [Tooltip("Blood burst, parented to the bone that was hit.")] [SerializeField]
+    private GameObject bloodHitVfxPrefab;
+
+    [SerializeField] private float bloodVfxLifetime = 2f;
+
+    [Tooltip("Decal projected onto the monster's body, parented to the bone.")] [SerializeField]
+    private GameObject bloodMeshDecalPrefab;
+
+    [SerializeField] private GameObject bloodGroundDecalPrefab;
+
+    [Tooltip("Environment layers ONLY. Must not include the monster's own layers.")] [SerializeField]
+    private LayerMask groundMask = ~0;
+
+    [SerializeField] private float groundCheckDistance = 4f;
+
+    [Tooltip("Ground blood lands up to this far along the bullet direction.")] [SerializeField]
+    private float groundSplatterDistance = 0.8f;
 
     private MonsterWatcher watcher;
     private Transform player;
@@ -65,6 +91,7 @@ public class MonsterController : MonoBehaviour
     private Vector3 lastKnownPosition;
     private Vector3 spawnPosition;
     private bool hasTarget;
+    private bool isDead;
     private bool playerVisible;
     private bool initialized;
     private Coroutine screamRoutine;
@@ -82,6 +109,9 @@ public class MonsterController : MonoBehaviour
 
         if (animator == null)
             animator = GetComponentInChildren<Animator>();
+
+        if (hitReaction == null)
+            hitReaction = GetComponent<MonsterHitReaction>();
 
         stamina = maxStamina;
     }
@@ -503,7 +533,7 @@ public class MonsterController : MonoBehaviour
         agent.isStopped = true;
         agent.ResetPath();
 
-        PlayAnimation("Recover");
+        PlayAnimation("Die");
 
         yield return new WaitForSeconds(recoveryTime);
 
@@ -517,7 +547,77 @@ public class MonsterController : MonoBehaviour
         hasTarget = false;
         recoveryRoutine = null;
 
-        EnterIdle();
+        isDead = true;
+    }
+
+    // ------------------------------------------------------------------
+    // Bullet hits (called by MonsterHitbox)
+    // ------------------------------------------------------------------
+    public void ReceiveHit(MonsterHitbox hitbox, BulletHitInfo hit)
+    {
+        BodyPart part = hitbox.Part;
+        float damage = hit.Damage * hitbox.DamageMultiplier;
+
+
+        BulletImpactManager impacts = BulletImpactManager.Instance;
+        if (impacts != null)
+        {
+            Transform bone = hitbox.transform; // effects follow the animated bone
+
+            // 1. Random hit sound
+            impacts.PlaySfx(hitSounds, hit.Point, hitSoundVolume);
+
+            // 2. Blood burst spraying back out of the wound
+            impacts.SpawnEffect(
+                bloodHitVfxPrefab,
+                hit.Point + hit.Normal * 0.01f,
+                Quaternion.LookRotation(hit.Normal),
+                bone,
+                bloodVfxLifetime
+            );
+
+            // 3. Decal on the body
+            impacts.SpawnDecal(
+                bloodMeshDecalPrefab,
+                hit.Point + hit.Normal * 0.1f,
+                BulletImpactManager.DecalRotation(hit.Normal),
+                bone
+            );
+
+            // 4. Decal on the ground
+            SpawnGroundBlood(impacts, hit);
+        }
+
+        // 5. Body reaction (head snap, spine twist)
+        if (hitReaction != null)
+            hitReaction.ApplyHit(part, hit.Point, hit.Direction);
+
+
+        // TODO when the monster gets health:
+        if (playerHealth != null) playerHealth.TakeDamage(damage);
+        if (playerHealth.Current <= 0f) KnockDownAndRecover();
+    }
+
+    private void SpawnGroundBlood(BulletImpactManager impacts, BulletHitInfo hit)
+    {
+        if (bloodGroundDecalPrefab == null)
+            return;
+
+        // Blood is flung the way the bullet was travelling.
+        Vector3 flat = Vector3.ProjectOnPlane(hit.Direction, Vector3.up).normalized;
+        Vector3 origin = hit.Point
+                         + flat * Random.Range(0.1f, groundSplatterDistance)
+                         + Vector3.up * 0.1f;
+
+        if (Physics.Raycast(origin, Vector3.down, out RaycastHit ground,
+                groundCheckDistance, groundMask, QueryTriggerInteraction.Ignore))
+        {
+            impacts.SpawnDecal(
+                bloodGroundDecalPrefab,
+                ground.point + ground.normal * 0.1f,
+                BulletImpactManager.DecalRotation(ground.normal)
+            );
+        }
     }
 
     private void PlayAnimation(string trigger)
