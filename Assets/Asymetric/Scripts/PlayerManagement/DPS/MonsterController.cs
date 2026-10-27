@@ -1,9 +1,7 @@
-﻿using System.Collections;
+﻿
+using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
-
-// Your player health component can implement this interface later.
-
 
 public class MonsterController : MonoBehaviour
 {
@@ -14,70 +12,108 @@ public class MonsterController : MonoBehaviour
         Investigating,
         Chasing,
         Attacking,
-        Recovering
+        Dead
     }
 
-    [Header("References")] [SerializeField]
-    private NavMeshAgent agent;
-
+    [Header("References")]
+    [SerializeField] private NavMeshAgent agent;
     [SerializeField] private Animator animator;
     [SerializeField] private PlayerHealth playerHealth;
     [Header("Movement")] [SerializeField] private float walkSpeed = 1.5f;
     [SerializeField] private float runSpeed = 4.5f;
     [SerializeField] private float wanderRadius = 6f;
     [SerializeField] private float wanderInterval = 8f;
-    [SerializeField, Range(0f, 1f)] private float wanderChance = 0.25f;
+    [SerializeField, Range(0f, 1f)]
+    private float wanderChance = 0.25f;
     [SerializeField] private float arrivalDistance = 1f;
     [SerializeField] private float investigationTimeout = 8f;
     [SerializeField] private float loseInterestTime = 12f;
 
-    [Header("Stamina")] [SerializeField] private float maxStamina = 10f;
+    [Header("Animation")]
+    [SerializeField] private string speedParameter = "Speed";
+    [SerializeField] private float animationDampTime = 0.1f;
+
+    [Header("Stamina")]
+    [SerializeField] private float maxStamina = 10f;
     [SerializeField] private float staminaDrainPerSecond = 1f;
     [SerializeField] private float staminaRecoveryPerSecond = 1.5f;
 
-    [Header("Attacks")] [SerializeField] private float lungeRange = 2f;
+    [Header("Attacks")]
+    [SerializeField] private float lungeRange = 2f;
     [SerializeField] private float lungeDamage = 30f;
     [SerializeField] private float lungeCooldown = 2f;
+
     [SerializeField] private float screamRange = 5f;
     [SerializeField] private float screamCooldown = 12f;
     [SerializeField] private float screamDamagePerSecond = 20f;
     [SerializeField] private float screamDuration = 5f;
+
     [SerializeField] private float attackLockout = 1f;
 
-    private string currentAnimationTrigger;
+    [Header("Hearing")]
+    [SerializeField] private float gunshotHearingRange = 25f;
 
-    [Header("Hearing")] [SerializeField] private float gunshotHearingRange = 25f;
+    [Header("Bullet Hits")]
+    [SerializeField] private MonsterHitReaction hitReaction;
 
-    [Header("Recovery")] [SerializeField] private float recoveryTime = 6f;
+    [Tooltip("A random clip is played at the hit point.")]
+    [SerializeField] private AudioClip[] hitSounds;
 
-    [Header("Bullet Hits")] [SerializeField]
-    private MonsterHitReaction hitReaction;
+    [SerializeField, Range(0f, 1f)]
+    private float hitSoundVolume = 1f;
 
-    [Tooltip("A random clip is played at the hit point.")] [SerializeField]
-    private AudioClip[] hitSounds;
-
-    [SerializeField, Range(0f, 1f)] private float hitSoundVolume = 1f;
-
-    [Tooltip("Blood burst, parented to the bone that was hit.")] [SerializeField]
-    private GameObject bloodHitVfxPrefab;
+    [Tooltip("Blood burst, parented to the bone that was hit.")]
+    [SerializeField] private GameObject bloodHitVfxPrefab;
 
     [SerializeField] private float bloodVfxLifetime = 2f;
 
-    [Tooltip("Decal projected onto the monster's body, parented to the bone.")] [SerializeField]
-    private GameObject bloodMeshDecalPrefab;
+    [Tooltip("Decal projected onto the monster's body, parented to the bone.")]
+    [SerializeField] private GameObject bloodMeshDecalPrefab;
 
     [SerializeField] private GameObject bloodGroundDecalPrefab;
 
-    [Tooltip("Environment layers ONLY. Must not include the monster's own layers.")] [SerializeField]
-    private LayerMask groundMask = ~0;
+    [Tooltip("Environment layers only. Exclude the monster's own layers.")]
+    [SerializeField] private LayerMask groundMask = ~0;
 
     [SerializeField] private float groundCheckDistance = 4f;
 
-    [Tooltip("Ground blood lands up to this far along the bullet direction.")] [SerializeField]
-    private float groundSplatterDistance = 0.8f;
+    [Tooltip("Ground blood lands up to this far along the bullet direction.")]
+    [SerializeField] private float groundSplatterDistance = 0.8f;
 
+    
+    
+    [Header("Monster Audio")]
+    [SerializeField] private AudioSource ambientAudioSource;
+    [SerializeField] private AudioSource actionAudioSource;
+
+    [SerializeField] private AudioClip[] wheepings;
+    [SerializeField] private AudioClip[] chasings;
+    [SerializeField] private AudioClip[] attackings;
+    [SerializeField] private AudioClip[] screamings;
+    [SerializeField] private AudioClip[] chockings;
+
+    [SerializeField, Range(0f, 1f)]
+    private float ambientVolume = 1f;
+
+    [SerializeField, Range(0f, 1f)]
+    private float actionVolume = 1f;
+
+    [SerializeField] private FeetAudio feetAudio;
+
+    private enum AmbientAudio
+    {
+        None,
+        Wheeping,
+        Chasing
+    }
+
+    private AmbientAudio currentAmbientAudio = AmbientAudio.None;
+
+    
+    
     private MonsterWatcher watcher;
     private Transform player;
+
     private State state = State.Idle;
 
     private float stamina;
@@ -90,17 +126,20 @@ public class MonsterController : MonoBehaviour
 
     private Vector3 lastKnownPosition;
     private Vector3 spawnPosition;
+
     private bool hasTarget;
     private bool isDead;
     private bool playerVisible;
     private bool initialized;
+
+    private string currentAnimationTrigger;
+
     private Coroutine screamRoutine;
-    private Coroutine recoveryRoutine;
 
     public float GunshotHearingRange => gunshotHearingRange;
 
     public bool CanPerceive =>
-        state != State.Recovering && isActiveAndEnabled;
+        state != State.Dead && isActiveAndEnabled;
 
     private void Awake()
     {
@@ -144,7 +183,8 @@ public class MonsterController : MonoBehaviour
         if (player == null && watcher != null)
             player = watcher.Player;
 
-        if (agent == null || !agent.isActiveAndEnabled ||
+        if (agent == null ||
+            !agent.isActiveAndEnabled ||
             !agent.isOnNavMesh)
         {
             Debug.LogError(
@@ -160,20 +200,35 @@ public class MonsterController : MonoBehaviour
         agent.speed = walkSpeed;
         agent.isStopped = false;
 
-        PlayAnimation("Watchful");
-        nextWanderTime = Time.time + Random.Range(2f, wanderInterval);
+        PlayAnimation("Movement");
+
+        nextWanderTime =
+            Time.time + Random.Range(2f, wanderInterval);
     }
 
     private void Update()
     {
-        // Always validate before accessing isStopped or SetDestination.
-        if (agent == null || !agent.isActiveAndEnabled ||
+        if (agent == null ||
+            !agent.isActiveAndEnabled ||
             !agent.isOnNavMesh)
+        {
+            return;
+        }
+
+        // Update the Blend Tree from actual movement velocity.
+        UpdateAnimationSpeed();
+        UpdateAmbientAudio();
+        
+        feetAudio.PlayMonsterFootsteps(
+            agent.isOnNavMesh,
+            agent.velocity.magnitude
+        );
+        
+        // A dead monster never resumes AI behavior.
+        if (state == State.Dead)
             return;
 
-        if (state == State.Recovering)
-            return;
-
+        // Forget the player after losing interest.
         if (player != null && hasTarget)
         {
             if (Time.time - lastSightTime > loseInterestTime &&
@@ -207,7 +262,22 @@ public class MonsterController : MonoBehaviour
         }
     }
 
-    // Called by MonsterWatcher when it has a clear view.
+    private void UpdateAnimationSpeed()
+    {
+        if (animator == null)
+            return;
+
+        float speed = agent.velocity.magnitude;
+
+        animator.SetFloat(
+            speedParameter,
+            speed,
+            animationDampTime,
+            Time.deltaTime
+        );
+    }
+
+    // Called by MonsterWatcher when the player is visible.
     public void SeePlayer(Vector3 position)
     {
         if (!CanPerceive)
@@ -216,6 +286,7 @@ public class MonsterController : MonoBehaviour
         lastKnownPosition = position;
         lastKnownTime = Time.time;
         lastSightTime = Time.time;
+
         hasTarget = true;
         playerVisible = true;
 
@@ -223,10 +294,13 @@ public class MonsterController : MonoBehaviour
             state = State.Chasing;
     }
 
-    // Called when movement or a gunshot is heard.
     public void HearNoise(Vector3 position)
     {
         if (!CanPerceive || playerVisible)
+            return;
+
+        // Don't reset the investigation timer every frame.
+        if (state == State.Investigating)
             return;
 
         lastKnownPosition = position;
@@ -246,6 +320,9 @@ public class MonsterController : MonoBehaviour
 
         RecoverStamina();
 
+        // Movement is also the idle Blend Tree state.
+        PlayAnimation("Movement");
+
         if (Time.time >= nextWanderTime)
         {
             nextWanderTime = Time.time + wanderInterval;
@@ -256,8 +333,9 @@ public class MonsterController : MonoBehaviour
                 agent.isStopped = false;
                 agent.speed = walkSpeed;
                 agent.SetDestination(destination);
+
                 state = State.Wandering;
-                PlayAnimation("Nervous");
+                PlayAnimation("Movement");
             }
         }
     }
@@ -265,6 +343,9 @@ public class MonsterController : MonoBehaviour
     private void UpdateWandering()
     {
         RecoverStamina();
+
+        agent.speed = walkSpeed;
+        PlayAnimation("Movement");
 
         if (!agent.pathPending &&
             (!agent.hasPath ||
@@ -282,7 +363,7 @@ public class MonsterController : MonoBehaviour
         agent.speed = walkSpeed;
         agent.SetDestination(lastKnownPosition);
 
-        PlayAnimation("Nervous");
+        PlayAnimation("Movement");
 
         if (Time.time - lastKnownTime > investigationTimeout)
         {
@@ -311,15 +392,18 @@ public class MonsterController : MonoBehaviour
             player.position
         );
 
-        // Attack only when the player is visible.
-        if (playerVisible && distance <= lungeRange &&
+        // Lunge when the player is visible and within range.
+        if (playerVisible &&
+            distance <= lungeRange &&
             Time.time >= nextLungeTime)
         {
             StartLunge();
             return;
         }
 
-        if (playerVisible && distance <= screamRange &&
+        // Scream when the player is visible but outside lunge range.
+        if (playerVisible &&
+            distance <= screamRange &&
             distance > lungeRange &&
             Time.time >= nextScreamTime)
         {
@@ -327,13 +411,15 @@ public class MonsterController : MonoBehaviour
             return;
         }
 
+        // Walk while stamina recovers.
         if (stamina <= 0f)
         {
             agent.isStopped = false;
             agent.speed = walkSpeed;
             agent.SetDestination(lastKnownPosition);
+
             RecoverStamina();
-            PlayAnimation("Nervous");
+            PlayAnimation("Movement");
             return;
         }
 
@@ -346,7 +432,7 @@ public class MonsterController : MonoBehaviour
         agent.speed = runSpeed;
         agent.SetDestination(lastKnownPosition);
 
-        PlayAnimation("Frantic");
+        PlayAnimation("Movement");
     }
 
     private void UpdateAttacking()
@@ -354,6 +440,7 @@ public class MonsterController : MonoBehaviour
         agent.isStopped = true;
         RecoverStamina();
 
+        // Turn towards the player during an attack.
         if (player != null)
         {
             Vector3 direction = player.position - transform.position;
@@ -371,10 +458,13 @@ public class MonsterController : MonoBehaviour
 
         if (Time.time >= attackEndTime)
         {
-            if (playerVisible)
+            if (playerVisible && player != null)
                 state = State.Chasing;
             else
                 state = State.Investigating;
+
+            // Enter the movement Blend Tree again.
+            PlayAnimation("Movement");
         }
     }
 
@@ -384,13 +474,16 @@ public class MonsterController : MonoBehaviour
         attackEndTime = Time.time + attackLockout;
 
         state = State.Attacking;
-        agent.isStopped = true;
-        PlayAnimation("Lunge");
 
-        // Temporary damage timing. Replace with an animation event later.
+        agent.isStopped = true;
+        PlayAnimation("Attack");
+        PlayOneShotRandom(attackings);
+        
+        // Temporary damage timing.
+        // Replace with an animation event when ready.
         if (player != null &&
             Vector3.Distance(transform.position, player.position)
-            <= lungeRange + 0.5f)
+                <= lungeRange + 0.5f)
         {
             DealDamage(player, lungeDamage);
         }
@@ -402,9 +495,11 @@ public class MonsterController : MonoBehaviour
         attackEndTime = Time.time + screamDuration;
 
         state = State.Attacking;
+
         agent.isStopped = true;
         PlayAnimation("Scream");
-
+        PlayOneShotRandom(screamings);
+        
         if (screamRoutine != null)
             StopCoroutine(screamRoutine);
 
@@ -419,6 +514,9 @@ public class MonsterController : MonoBehaviour
         {
             yield return new WaitForSeconds(1f);
             elapsed += 1f;
+
+            if (state == State.Dead)
+                break;
 
             if (player == null)
                 continue;
@@ -442,12 +540,12 @@ public class MonsterController : MonoBehaviour
         {
             if (component is IDamageable damageable)
             {
-                damageable.TakeDamage(damage, this.transform);
+                damageable.TakeDamage(damage, transform);
                 return;
             }
         }
 
-        // Allows integration with an existing health script temporarily.
+        // Compatibility with an existing health script.
         target.SendMessage(
             "TakeDamage",
             damage,
@@ -460,7 +558,7 @@ public class MonsterController : MonoBehaviour
         for (int i = 0; i < 8; i++)
         {
             Vector3 candidate = spawnPosition +
-                                Random.insideUnitSphere * wanderRadius;
+                Random.insideUnitSphere * wanderRadius;
 
             if (NavMesh.SamplePosition(
                     candidate,
@@ -488,11 +586,12 @@ public class MonsterController : MonoBehaviour
     private void EnterIdle()
     {
         state = State.Idle;
-        agent.isStopped = true;
-        PlayAnimation("Watchful");
 
-        nextWanderTime = Time.time +
-                         Random.Range(2f, wanderInterval);
+        agent.isStopped = true;
+        PlayAnimation("Movement");
+
+        nextWanderTime =
+            Time.time + Random.Range(2f, wanderInterval);
     }
 
     private void ForgetPlayer()
@@ -502,16 +601,21 @@ public class MonsterController : MonoBehaviour
         state = State.Idle;
 
         agent.isStopped = true;
-        PlayAnimation("Watchful");
+        PlayAnimation("Movement");
+
         nextWanderTime = Time.time + 2f;
     }
 
-    // Call this when your future health system determines the monster
-    // has been defeated. Recover currently means temporary incapacitation.
-    public void KnockDownAndRecover()
+    // Permanently kills/incapacitates the monster.
+    // Call this when the monster's health reaches zero.
+    public void DiePermanently()
     {
-        if (state == State.Recovering)
+        if (state == State.Dead)
             return;
+
+        state = State.Dead;
+        playerVisible = false;
+        hasTarget = false;
 
         if (screamRoutine != null)
         {
@@ -519,55 +623,47 @@ public class MonsterController : MonoBehaviour
             screamRoutine = null;
         }
 
-        if (recoveryRoutine != null)
-            StopCoroutine(recoveryRoutine);
-
-        recoveryRoutine = StartCoroutine(RecoveryRoutine());
-    }
-
-    private IEnumerator RecoveryRoutine()
-    {
-        state = State.Recovering;
-        playerVisible = false;
-
-        agent.isStopped = true;
-        agent.ResetPath();
-
-        PlayAnimation("Die");
-
-        yield return new WaitForSeconds(recoveryTime);
-
-        if (agent != null && agent.isActiveAndEnabled &&
+        if (agent != null &&
+            agent.isActiveAndEnabled &&
             agent.isOnNavMesh)
         {
-            agent.isStopped = false;
+            agent.isStopped = true;
+            agent.ResetPath();
         }
+        StopMonsterAudio();
+        PlayOneShotRandom(chockings);
 
-        stamina = maxStamina;
-        hasTarget = false;
-        recoveryRoutine = null;
-
-        isDead = true;
+        if (animator != null)
+        {
+            animator.SetFloat(speedParameter, 0f);
+            PlayAnimation("Die");
+        }
     }
 
-    // ------------------------------------------------------------------
-    // Bullet hits (called by MonsterHitbox)
-    // ------------------------------------------------------------------
+    // Called by MonsterHitbox.
     public void ReceiveHit(MonsterHitbox hitbox, BulletHitInfo hit)
     {
+        if (hitbox == null)
+            return;
+
         BodyPart part = hitbox.Part;
         float damage = hit.Damage * hitbox.DamageMultiplier;
 
 
         BulletImpactManager impacts = BulletImpactManager.Instance;
+
         if (impacts != null)
         {
-            Transform bone = hitbox.transform; // effects follow the animated bone
+            Transform bone = hitbox.transform;
 
-            // 1. Random hit sound
-            impacts.PlaySfx(hitSounds, hit.Point, hitSoundVolume);
+            // 1. Random hit sound.
+            impacts.PlaySfx(
+                hitSounds,
+                hit.Point,
+                hitSoundVolume
+            );
 
-            // 2. Blood burst spraying back out of the wound
+            // 2. Blood burst following the animated bone.
             impacts.SpawnEffect(
                 bloodHitVfxPrefab,
                 hit.Point + hit.Normal * 0.01f,
@@ -576,7 +672,7 @@ public class MonsterController : MonoBehaviour
                 bloodVfxLifetime
             );
 
-            // 3. Decal on the body
+            // 3. Blood decal on the monster.
             impacts.SpawnDecal(
                 bloodMeshDecalPrefab,
                 hit.Point + hit.Normal * 0.1f,
@@ -584,33 +680,43 @@ public class MonsterController : MonoBehaviour
                 bone
             );
 
-            // 4. Decal on the ground
+            // 4. Blood decal on the ground.
             SpawnGroundBlood(impacts, hit);
         }
 
-        // 5. Body reaction (head snap, spine twist)
+        // 5. Body reaction.
         if (hitReaction != null)
             hitReaction.ApplyHit(part, hit.Point, hit.Direction);
 
 
         // TODO when the monster gets health:
         if (playerHealth != null) playerHealth.TakeDamage(damage);
-        if (playerHealth.Current <= 0f) KnockDownAndRecover();
+        if (playerHealth.Current <= 0f) DiePermanently();
     }
 
-    private void SpawnGroundBlood(BulletImpactManager impacts, BulletHitInfo hit)
+    private void SpawnGroundBlood(
+        BulletImpactManager impacts,
+        BulletHitInfo hit)
     {
         if (bloodGroundDecalPrefab == null)
             return;
 
-        // Blood is flung the way the bullet was travelling.
-        Vector3 flat = Vector3.ProjectOnPlane(hit.Direction, Vector3.up).normalized;
-        Vector3 origin = hit.Point
-                         + flat * Random.Range(0.1f, groundSplatterDistance)
-                         + Vector3.up * 0.1f;
+        Vector3 flat = Vector3.ProjectOnPlane(
+            hit.Direction,
+            Vector3.up
+        ).normalized;
 
-        if (Physics.Raycast(origin, Vector3.down, out RaycastHit ground,
-                groundCheckDistance, groundMask, QueryTriggerInteraction.Ignore))
+        Vector3 origin = hit.Point
+            + flat * Random.Range(0.1f, groundSplatterDistance)
+            + Vector3.up * 0.1f;
+
+        if (Physics.Raycast(
+                origin,
+                Vector3.down,
+                out RaycastHit ground,
+                groundCheckDistance,
+                groundMask,
+                QueryTriggerInteraction.Ignore))
         {
             impacts.SpawnDecal(
                 bloodGroundDecalPrefab,
@@ -624,14 +730,14 @@ public class MonsterController : MonoBehaviour
     {
         if (animator == null ||
             currentAnimationTrigger == trigger)
+        {
             return;
+        }
 
-        animator.ResetTrigger("Watchful");
-        animator.ResetTrigger("Nervous");
-        animator.ResetTrigger("Frantic");
-        animator.ResetTrigger("Lunge");
+        animator.ResetTrigger("Movement");
+        animator.ResetTrigger("Attack");
         animator.ResetTrigger("Scream");
-        animator.ResetTrigger("Recover");
+        animator.ResetTrigger("Die");
 
         currentAnimationTrigger = trigger;
         animator.SetTrigger(trigger);
@@ -647,4 +753,110 @@ public class MonsterController : MonoBehaviour
         if (watcher != null)
             watcher.UnregisterMonster(this);
     }
+    
+    
+    private AudioClip GetRandomClip(AudioClip[] clips)
+    {
+        if (clips == null || clips.Length == 0)
+            return null;
+
+        // Avoid selecting empty slots.
+        int validCount = 0;
+
+        foreach (AudioClip clip in clips)
+        {
+            if (clip != null)
+                validCount++;
+        }
+
+        if (validCount == 0)
+            return null;
+
+        int selected = Random.Range(0, validCount);
+
+        foreach (AudioClip clip in clips)
+        {
+            if (clip == null)
+                continue;
+
+            if (selected == 0)
+                return clip;
+
+            selected--;
+        }
+
+        return null;
+    }
+
+    private void PlayOneShotRandom(AudioClip[] clips)
+    {
+        if (actionAudioSource == null)
+            return;
+
+        AudioClip clip = GetRandomClip(clips);
+
+        if (clip == null)
+            return;
+
+        actionAudioSource.PlayOneShot(clip, actionVolume);
+    }
+
+    private void UpdateAmbientAudio()
+    {
+        if (ambientAudioSource == null)
+            return;
+
+        AmbientAudio desiredAudio;
+
+        if (state == State.Dead)
+        {
+            desiredAudio = AmbientAudio.None;
+        }
+        else if (state == State.Chasing)
+        {
+            desiredAudio = AmbientAudio.Chasing;
+        }
+        else
+        {
+            desiredAudio = AmbientAudio.Wheeping;
+        }
+
+        if (desiredAudio == currentAmbientAudio)
+            return;
+
+        currentAmbientAudio = desiredAudio;
+
+        ambientAudioSource.Stop();
+        ambientAudioSource.clip = null;
+
+        if (desiredAudio == AmbientAudio.None)
+            return;
+
+        AudioClip[] clips =
+            desiredAudio == AmbientAudio.Chasing
+                ? chasings
+                : wheepings;
+
+        AudioClip clip = GetRandomClip(clips);
+
+        if (clip == null)
+            return;
+
+        ambientAudioSource.clip = clip;
+        ambientAudioSource.loop = true;
+        ambientAudioSource.volume = ambientVolume;
+        ambientAudioSource.Play();
+    }
+
+    private void StopMonsterAudio()
+    {
+        currentAmbientAudio = AmbientAudio.None;
+
+        if (ambientAudioSource != null)
+            ambientAudioSource.Stop();
+
+        if (actionAudioSource != null)
+            actionAudioSource.Stop();
+    }
+
 }

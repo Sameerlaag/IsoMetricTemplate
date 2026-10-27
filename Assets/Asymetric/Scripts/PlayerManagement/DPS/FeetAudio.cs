@@ -1,8 +1,10 @@
-﻿using UnityEngine;
+﻿
+using UnityEngine;
 
 public class FeetAudio : MonoBehaviour
 {
     [SerializeField] private AudioSource _feetAudioSource;
+
     [SerializeField] private AudioClip[] _aiming;
     [SerializeField] private AudioClip[] _walking;
     [SerializeField] private AudioClip[] _running;
@@ -12,18 +14,53 @@ public class FeetAudio : MonoBehaviour
     [SerializeField] private float _walkStepInterval = 0.5f;
     [SerializeField] private float _runStepInterval = 0.3f;
 
+    [Header("Monster Movement")]
+    [SerializeField] private float _runSpeedThreshold = 2.5f;
+
     private float _stepTimer;
 
-    public void PlayFootsteps(bool isGrounded, bool isSprinting, bool isAiming, float speed)
+    // Existing player-compatible API.
+    public void PlayFootsteps(
+        bool isGrounded,
+        bool isSprinting,
+        bool isAiming,
+        float speed)
     {
-        // No audio if not grounded or basically standing still
+        UpdateFootsteps(
+            isGrounded,
+            isSprinting,
+            isAiming,
+            speed
+        );
+    }
+
+    // Call this from MonsterController.
+    public void PlayMonsterFootsteps(
+        bool isGrounded,
+        float speed)
+    {
+        bool isMovingFast = speed >= _runSpeedThreshold;
+
+        UpdateFootsteps(
+            isGrounded,
+            isMovingFast,
+            false,
+            speed
+        );
+    }
+
+    private void UpdateFootsteps(
+        bool isGrounded,
+        bool isSprinting,
+        bool isAiming,
+        float speed)
+    {
         if (!isGrounded || speed < 0.1f)
         {
             _stepTimer = 0f;
             return;
         }
 
-        // Determine interval and clip array based on the current movement state
         float currentInterval;
         AudioClip[] currentArray;
 
@@ -43,20 +80,28 @@ public class FeetAudio : MonoBehaviour
             currentArray = _walking;
         }
 
+        if (currentInterval <= 0f)
+            return;
+
         _stepTimer += Time.deltaTime;
+
         if (_stepTimer >= currentInterval)
         {
-            _stepTimer = 0f;
+            _stepTimer -= currentInterval;
 
-            // Pick a random clip from the array if it contains elements
-            if (currentArray != null && currentArray.Length > 0 && _feetAudioSource != null)
+            if (currentArray == null ||
+                currentArray.Length == 0 ||
+                _feetAudioSource == null)
             {
-                AudioClip randomClip = currentArray[Random.Range(0, currentArray.Length)];
-                if (randomClip != null)
-                {
-                    _feetAudioSource.PlayOneShot(randomClip);
-                }
+                return;
             }
+
+            AudioClip clip = currentArray[
+                Random.Range(0, currentArray.Length)
+            ];
+
+            if (clip != null)
+                _feetAudioSource.PlayOneShot(clip);
         }
     }
 }

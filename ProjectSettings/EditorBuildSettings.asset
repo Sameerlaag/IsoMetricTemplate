@@ -6,6 +6,9 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/FPS/Scenes/DoomMainMenu.unity
+    guid: 69cfaa46e8f98644db80a08b48bff020
+  - enabled: 1
     path: Assets/FPS/Scenes/DoomFps.unity
     guid: 8a81c868433d51d48872a881e7851693
   - enabled: 0

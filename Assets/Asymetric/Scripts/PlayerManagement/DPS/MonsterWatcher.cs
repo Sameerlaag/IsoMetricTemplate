@@ -45,6 +45,11 @@ public class MonsterWatcher : MonoBehaviour
     private readonly List<MonsterController> monsters = new();
     private float nextSpawnTime;
     private int spawnedCount;
+    
+    [Header("Detection Debug")]
+    [SerializeField] private bool debugDetection = true;
+
+    private readonly Dictionary<MonsterController, bool> previousSight = new();
 
     public Transform Player => player;
     public PlayerMovementMode MovementMode => movementMode;
@@ -170,14 +175,31 @@ public class MonsterWatcher : MonoBehaviour
             bool canSee = distance <= sightRange &&
                           HasLineOfSight(origin, target);
 
+            var previously = !previousSight.TryGetValue(monster, out bool previouslySawPlayer);
             if (canSee)
             {
+                if (previously
+                    || !previouslySawPlayer)
+                {
+                    if (debugDetection)
+                        Debug.Log($"[Watcher] {monster.name}: SAW PLAYER", monster);
+                }
+
+                previousSight[monster] = true;
                 monster.SeePlayer(player.position);
                 continue;
             }
 
-            monster.LoseSight();
+            if (previously
+                || previouslySawPlayer)
+            {
+                if (debugDetection)
+                    Debug.Log($"[Watcher] {monster.name}: LOST SIGHT", monster);
 
+                monster.LoseSight();
+            }
+
+            previousSight[monster] = false;
             
             // Hearing/movement detection can work through walls.
             float noiseRange = movementMode switch
