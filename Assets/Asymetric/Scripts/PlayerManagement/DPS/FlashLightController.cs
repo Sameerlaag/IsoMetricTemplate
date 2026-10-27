@@ -288,7 +288,9 @@ public class FlashlightController : MonoBehaviour
         if (mainLight != null)
         {
             mainLight.enabled = isOn;
-            mainLight.intensity = mainBaseIntensity;
+            mainLight.intensity = isOn
+                ? nextLongRangeIntensity
+                : 0f;
         }
 
         if (longRangeLight != null)
