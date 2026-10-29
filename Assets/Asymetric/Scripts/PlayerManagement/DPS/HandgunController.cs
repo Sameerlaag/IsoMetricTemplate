@@ -33,94 +33,117 @@ public class HandgunController : MonoBehaviour
         Hidden
     }
 
-    [Header("References")]
-    [SerializeField] private InputReader _inputReader;
+    [Header("References")] [SerializeField]
+    private InputReader _inputReader;
+
     [SerializeField] private PlayerFPSController _player;
     [SerializeField] private Animator _animator;
     [SerializeField] private Transform _fireOrigin; // usually the camera
+    [SerializeField] private MonsterWatcher _monsterWatcher; // usually the camera
 
-    [Header("Ammo")]
-    [SerializeField] private int _magazineSize = 12;
+    [Header("Ammo")] [SerializeField] private int _magazineSize = 12;
     [SerializeField] private int _startingReserve = 48;
     [SerializeField] private bool _infiniteReserve = false;
 
-    [Header("Timings (seconds)")]
-    [SerializeField] private float _drawDuration = 0.6f;
+    [Header("Timings (seconds)")] [SerializeField]
+    private float _drawDuration = 0.6f;
+
     [SerializeField] private float _hideDuration = 0.35f;
     [SerializeField] private float _reloadDuration = 1.8f;
 
-    [Header("Fire Timing")]
-    [Tooltip("Hold the fire button to keep shooting.")]
-    [SerializeField] private bool _allowAutoFire = true;
+    [Header("Fire Timing")] [Tooltip("Hold the fire button to keep shooting.")] [SerializeField]
+    private bool _allowAutoFire = true;
+
     [Tooltip("Right after a shot, fire input is ignored for this long. " +
              "This is also the delay between shots while auto-firing.")]
-    [SerializeField] private float _mandatoryRecovery = 0.10f;
+    [SerializeField]
+    private float _mandatoryRecovery = 0.10f;
+
     [Tooltip("After the mandatory recovery, firing again retriggers the shot immediately. " +
              "When this ends the gun returns to Idle.")]
-    [SerializeField] private float _recoveryWindow = 0.15f;
+    [SerializeField]
+    private float _recoveryWindow = 0.15f;
 
     [Header("Hands Container")]
     [Tooltip("Container holding the hands + gun. Use an object the Animator does NOT animate " +
              "(e.g. a parent 'HandsRecoil'), otherwise the Animator will overwrite the movement.")]
-    [SerializeField] private Transform _handsContainer;
+    [SerializeField]
+    private Transform _handsContainer;
 
     [Header("Blowback")]
     [Tooltip("Local-space offset at the peak of the recoil. -Z pushes the gun back toward the player.")]
-    [SerializeField] private Vector3 _blowbackOffset = new Vector3(0f, 0.01f, -0.07f);
+    [SerializeField]
+    private Vector3 _blowbackOffset = new Vector3(0f, 0.01f, -0.07f);
+
     [SerializeField] private float _blowbackKickTime = 0.04f;
     [SerializeField] private float _blowbackReturnTime = 0.14f;
 
-    [Header("Walk Sway")]
-    [SerializeField] private bool _enableWalkSway = true;
-    [Tooltip("X = side to side, Y = up/down (bobs twice per side-to-side cycle).")]
-    [SerializeField] private Vector2 _swayAmplitude = new Vector2(0.012f, 0.008f);
-    [Tooltip("Rocking (roll) in degrees. 0 = no rotation.")]
-    [SerializeField] private float _swayRollDegrees = 1.5f;
-    [Tooltip("Sway speed (radians/sec) when moving at the reference speed.")]
-    [SerializeField] private float _swayFrequency = 7f;
-    [Tooltip("Player speed at which the sway is at full strength (≈ your walk speed).")]
-    [SerializeField] private float _swayReferenceSpeed = 4f;
-    [Tooltip("How fast the sway fades in/out when you start/stop moving.")]
-    [SerializeField] private float _swayBlendSpeed = 6f;
-    [Tooltip("Sway strength while aiming (0 = none, 1 = same as walking).")]
-    [SerializeField, Range(0f, 1f)] private float _aimSwayMultiplier = 0.2f;
+    [Header("Walk Sway")] [SerializeField] private bool _enableWalkSway = true;
 
-    [Header("Shooting")]
-    [SerializeField] private float _range = 100f;
+    [Tooltip("X = side to side, Y = up/down (bobs twice per side-to-side cycle).")] [SerializeField]
+    private Vector2 _swayAmplitude = new Vector2(0.012f, 0.008f);
+
+    [Tooltip("Rocking (roll) in degrees. 0 = no rotation.")] [SerializeField]
+    private float _swayRollDegrees = 1.5f;
+
+    [Tooltip("Sway speed (radians/sec) when moving at the reference speed.")] [SerializeField]
+    private float _swayFrequency = 7f;
+
+    [Tooltip("Player speed at which the sway is at full strength (≈ your walk speed).")] [SerializeField]
+    private float _swayReferenceSpeed = 4f;
+
+    [Tooltip("How fast the sway fades in/out when you start/stop moving.")] [SerializeField]
+    private float _swayBlendSpeed = 6f;
+
+    [Tooltip("Sway strength while aiming (0 = none, 1 = same as walking).")] [SerializeField, Range(0f, 1f)]
+    private float _aimSwayMultiplier = 0.2f;
+
+    [Header("Shooting")] [SerializeField] private float _range = 100f;
     [SerializeField] private float _damage = 25f;
-    [Tooltip("Include the enemy HITBOX layer, exclude the enemy root/NavMesh layer.")]
-    [SerializeField] private LayerMask _hitMask = ~0;
 
-    [Header("Spread (degrees, cone half-angle)")]
-    [Tooltip("Aiming: spread when settled.")]
-    [SerializeField] private float _aimRestSpread = 0f;
-    [Tooltip("Aiming: spread right after a shot (or after starting to aim).")]
-    [SerializeField] private float _aimMaxSpread = 12f;
-    [Tooltip("Not aiming: spread when settled.")]
-    [SerializeField] private float _hipRestSpread = 8f;
-    [Tooltip("Not aiming: spread right after a shot (or after stopping aiming).")]
-    [SerializeField] private float _hipMaxSpread = 22f;
+    [Tooltip("Include the enemy HITBOX layer, exclude the enemy root/NavMesh layer.")] [SerializeField]
+    private LayerMask _hitMask = ~0;
 
-    [Header("Animator Triggers (leave Reload empty to skip)")]
-    [SerializeField] private string _drawTrigger = "Draw";
+    [Header("Spread (degrees, cone half-angle)")] [Tooltip("Aiming: spread when settled.")] [SerializeField]
+    private float _aimRestSpread = 0f;
+
+    [Tooltip("Aiming: spread right after a shot (or after starting to aim).")] [SerializeField]
+    private float _aimMaxSpread = 12f;
+
+    [Tooltip("Not aiming: spread when settled.")] [SerializeField]
+    private float _hipRestSpread = 8f;
+
+    [Tooltip("Not aiming: spread right after a shot (or after stopping aiming).")] [SerializeField]
+    private float _hipMaxSpread = 22f;
+
+    [Header("Animator Triggers (leave Reload empty to skip)")] [SerializeField]
+    private string _drawTrigger = "Draw";
+
     [SerializeField] private string _idleTrigger = "Idle";
     [SerializeField] private string _shootTrigger = "Shoot";
     [SerializeField] private string _hideTrigger = "Hide";
     [SerializeField] private string _reloadTrigger = "Reload";
 
-    [Header("Effects (placeholders - all optional)")]
-    [SerializeField] private AudioSource _audioSource;
+    [Header("Effects (placeholders - all optional)")] [SerializeField]
+    private AudioSource _audioSource;
+
     [SerializeField] private AudioClip _fireSound;
-    [Tooltip("Random pitch +/- applied to each shot. 0 = identical every time.")]
-    [SerializeField, Range(0f, 0.2f)] private float _firePitchVariation = 0.04f;
+
+    [Tooltip("Random pitch +/- applied to each shot. 0 = identical every time.")] [SerializeField, Range(0f, 0.2f)]
+    private float _firePitchVariation = 0.04f;
+
     [SerializeField] private AudioClip _dryFireSound;
     [SerializeField] private AudioClip _reloadSound;
     [SerializeField] private ParticleSystem _muzzleFlash;
-    [Tooltip("Plays on every shot.")]
-    [SerializeField] private ParticleSystem _bulletTrail;
+
+    [Tooltip("Plays on every shot.")] [SerializeField]
+    private ParticleSystem _bulletTrail;
+
     [Tooltip("Plays a while after a shot, and is stopped/cancelled if another shot is fired. " +
              "Set Looping OFF on this particle system.")]
-    [SerializeField] private ParticleSystem _postFireSmoke;
+    [SerializeField]
+    private ParticleSystem _postFireSmoke;
+
     [SerializeField] private float _smokeDelay = 1f;
     [SerializeField] private Light _muzzleLight;
     [SerializeField] private float _muzzleLightDuration = 0.05f;
@@ -283,6 +306,7 @@ public class HandgunController : MonoBehaviour
                     OnReloadEnded?.Invoke(true);
                     ReturnToIdle();
                 }
+
                 break;
 
             case GunState.Hiding:
@@ -291,6 +315,7 @@ public class HandgunController : MonoBehaviour
                     if (sprinting) _state = GunState.Hidden;
                     else StartDraw(); // player stopped running during the hide animation
                 }
+
                 break;
 
             case GunState.Hidden:
@@ -328,6 +353,7 @@ public class HandgunController : MonoBehaviour
                 PlaySound(_dryFireSound);
                 TryStartReload();
             }
+
             return;
         }
 
@@ -393,6 +419,7 @@ public class HandgunController : MonoBehaviour
         {
             Debug.DrawLine(origin.position, hit.point, Color.red, 0.5f);
             ResolveHit(hit, direction);
+            _monsterWatcher.NotifyGunshot(origin.position);
         }
     }
 

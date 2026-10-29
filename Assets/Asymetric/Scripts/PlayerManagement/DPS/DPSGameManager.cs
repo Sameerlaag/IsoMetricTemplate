@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+using System;
+using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 
@@ -9,6 +10,13 @@ public class DPSGameManager : MonoBehaviour
     [Header("Scene Settings")] 
     [SerializeField] private string _gameSceneName = "DoomFps";
     [SerializeField] private string _mainMenuSceneName = "MainMenu";
+
+    [Header("Input")]
+    [SerializeField] private InputReader _inputReader;
+
+    public event Action<bool> OnPauseStateChanged;
+    // Kept for backward compatibility
+    public event Action<bool> ResumedGame;
 
     public bool IsPaused { get; private set; }
     private DPSMainMenuController _activeMenu;
@@ -46,12 +54,25 @@ public class DPSGameManager : MonoBehaviour
         {
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
+            if (_inputReader != null)
+            {
+                _inputReader.DisablePlayerActions();
+            }
+        }
+        else if (scene.name == _gameSceneName)
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+            if (_inputReader != null)
+            {
+                _inputReader.EnablePlayerActions();
+            }
         }
     }
 
     private void Update()
     {
-        // Only allow ESC toggle in the game scene and use wasPressedThisFrame (not isPressed!)
+        // Only allow ESC toggle in the game scene and use wasPressedThisFrame
         if (SceneManager.GetActiveScene().name == _gameSceneName)
         {
             if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
@@ -83,27 +104,45 @@ public class DPSGameManager : MonoBehaviour
 
     public void PauseGame()
     {
+        if (IsPaused) return;
+
         IsPaused = true;
         Time.timeScale = 0f;
         AudioListener.pause = true; // Stop sounds while paused
 
+        if (_inputReader != null)
+        {
+            _inputReader.DisablePlayerActions();
+        }
+
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
+        OnPauseStateChanged?.Invoke(true);
         UpdateMenuState();
     }
 
     public void ResumeGame()
     {
+        if (!IsPaused && Time.timeScale == 1f) return;
+
         IsPaused = false;
         Time.timeScale = 1f;
         AudioListener.pause = false; // Restore sounds
 
         if (SceneManager.GetActiveScene().name == _gameSceneName)
         {
+            if (_inputReader != null)
+            {
+                _inputReader.EnablePlayerActions();
+            }
+
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
         }
+
+        OnPauseStateChanged?.Invoke(false);
+        ResumedGame?.Invoke(true);
 
         UpdateMenuState();
     }

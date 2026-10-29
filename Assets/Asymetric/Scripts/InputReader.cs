@@ -44,12 +44,32 @@ public class InputReader : ScriptableObject, PlayerActionsInputs.IPlayerActions
             _inputActions.Player.SetCallbacks(this);
         }
 
-        _inputActions.Player.Enable();
+        EnablePlayerActions();
     }
 
     private void OnDisable()
     {
-        _inputActions.Player.Disable();
+        DisablePlayerActions();
+    }
+
+    public void EnablePlayerActions()
+    {
+        _inputActions?.Player.Enable();
+    }
+
+    public void DisablePlayerActions()
+    {
+        _inputActions?.Player.Disable();
+        ResetInputs();
+    }
+
+    public void ResetInputs()
+    {
+        MoveInput = Vector2.zero;
+        LookInput = Vector2.zero;
+        IsSprinting = false;
+        IsAiming = false;
+        IsFiring = false;
     }
 
     public void OnMove(InputAction.CallbackContext context)

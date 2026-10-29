@@ -1,9 +1,10 @@
 using System;
 using System.Collections;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
+using UnityEngine.SceneManagement;
+using Random = UnityEngine.Random;
 
 /// <summary>
 /// First-person controller: mouse look, movement, sprint/aim rules, 
@@ -14,8 +15,9 @@ using UnityEngine.Rendering.Universal;
 [RequireComponent(typeof(CharacterController))]
 public class PlayerFPSController : MonoBehaviour, IDamageable
 {
-    [Header("References")] 
-    [SerializeField] private InputReader _inputReader;
+    [Header("References")] [SerializeField]
+    private InputReader _inputReader;
+
     [SerializeField] private Transform _cameraPivot;
     [SerializeField] private Camera _mainCamera;
     [SerializeField] private HandgunController _weapon;
@@ -23,47 +25,48 @@ public class PlayerFPSController : MonoBehaviour, IDamageable
     [SerializeField] private FeetAudio _feetAudioManager;
     [SerializeField] private PlayerHealth _playerHealth;
 
-    [Header("Audio")]
-    [SerializeField] private AudioSource _sfxAudioSource;
+    [Header("Audio")] [SerializeField] private AudioSource _sfxAudioSource;
     [SerializeField] private AudioSource _breathingAudioSource;
     [SerializeField] private AudioClip[] _hitAudioClips;
     [SerializeField] private AudioClip _deathAudioClip;
     [SerializeField] private AudioClip _introBreathClip;
 
-    [Header("Post-Processing / Juice")]
-    [SerializeField] private Volume _postProcessingVolume;
+    [Header("Post-Processing / Juice")] [SerializeField]
+    private Volume _postProcessingVolume;
+
     [SerializeField] private float _damageShakeBaseIntensity = 0.15f;
     [SerializeField] private float _damageShakeDuration = 0.35f;
     [SerializeField] private float _introDuration = 1.0f;
     [SerializeField] private float _deathSequenceDuration = 1.5f;
     [SerializeField] private string _mainMenuSceneName = "MainMenu";
 
-    [Header("Look")] 
-    [SerializeField] private float _lookSensitivity = 0.12f;
+    [Header("Look")] [SerializeField] private float _lookSensitivity = 0.12f;
     [SerializeField] private float _aimSensitivityMultiplier = 0.6f;
     [SerializeField] private float _minPitch = -85f;
     [SerializeField] private float _maxPitch = 85f;
     [SerializeField] private bool _lockCursor = true;
 
-    [Header("Movement Speeds")] 
-    [SerializeField] private float _walkSpeed = 4f;
+    [Header("Movement Speeds")] [SerializeField]
+    private float _walkSpeed = 4f;
+
     [SerializeField] private float _runSpeed = 7.5f;
     [SerializeField] private float _aimSpeed = 2f;
     [SerializeField] private float _acceleration = 40f;
     [SerializeField] private float _deceleration = 50f;
 
-    [Header("Physics")] 
-    [SerializeField] private float _groundSnapForce = -5f;
+    [Header("Physics")] [SerializeField] private float _groundSnapForce = -5f;
     [SerializeField] private float _gravity = -19.62f;
 
-    [Header("Camera - Aim Zoom")] 
-    [SerializeField] private float _defaultFov = 70f;
+    [Header("Camera - Aim Zoom")] [SerializeField]
+    private float _defaultFov = 70f;
+
     [SerializeField] private float _aimFov = 50f;
     [SerializeField] private float _aimForwardOffset = 0.15f;
     [SerializeField] private float _aimTransitionTime = 0.18f;
 
-    [Header("Camera - Sprint")] 
-    [SerializeField] private float _sprintFovBoost = 6f;
+    [Header("Camera - Sprint")] [SerializeField]
+    private float _sprintFovBoost = 6f;
+
     [SerializeField] private float _sprintTransitionTime = 0.25f;
 
     private CharacterController _characterController;
@@ -86,12 +89,12 @@ public class PlayerFPSController : MonoBehaviour, IDamageable
     private float _aimBlend;
     private float _sprintBlend;
     private Vector3 _cameraDefaultLocalPos;
-    
+
     // Knockback and Shake runtime state
     private Vector3 _knockbackVelocity;
     private float _shakeTimer;
     private float _currentShakeIntensity;
-    
+
     // Post-processing profile runtime cached references
     private Bloom _bloomComponent;
     private LensDistortion _lensDistortionComponent;
@@ -122,7 +125,7 @@ public class PlayerFPSController : MonoBehaviour, IDamageable
         {
             _postProcessingVolume.profile.TryGet(out _bloomComponent);
             _postProcessingVolume.profile.TryGet(out _lensDistortionComponent);
-            
+
             if (_postProcessingVolume.profile.TryGet(out _vignetteComponent))
             {
                 _defaultVignetteIntensity = _vignetteComponent.intensity.value;
@@ -155,8 +158,10 @@ public class PlayerFPSController : MonoBehaviour, IDamageable
             // Smoothly open eyes (lerp vignette back to default)
             if (_vignetteComponent != null)
             {
-                _vignetteComponent.intensity.value = Mathf.Lerp(1.0f, _defaultVignetteIntensity, Mathf.SmoothStep(0f, 1f, t));
+                _vignetteComponent.intensity.value =
+                    Mathf.Lerp(1.0f, _defaultVignetteIntensity, Mathf.SmoothStep(0f, 1f, t));
             }
+
             yield return null;
         }
 
@@ -186,22 +191,30 @@ public class PlayerFPSController : MonoBehaviour, IDamageable
             Cursor.visible = false;
         }
 
-        _inputReader.OnEquipedItemPerformed += HandleEquipment;
+        if (_inputReader != null)
+        {
+            _inputReader.OnEquipedItemPerformed += HandleEquipment;
+        }
     }
 
     private void OnDisable()
     {
-        _inputReader.OnEquipedItemPerformed -= HandleEquipment;
+        if (_inputReader != null)
+        {
+            _inputReader.OnEquipedItemPerformed -= HandleEquipment;
+        }
     }
 
     private void HandleEquipment()
     {
-        _flashlight.Switch();
+        if (DPSGameManager.Instance != null && DPSGameManager.Instance.IsPaused) return;
+        if (_flashlight != null) _flashlight.Switch();
     }
 
     private void Update()
     {
         if (_isDead || _isIntroActive) return;
+        if (DPSGameManager.Instance != null && DPSGameManager.Instance.IsPaused) return;
 
         UpdateGroundInfo();
         UpdateSprintAndAimState();
@@ -224,9 +237,9 @@ public class PlayerFPSController : MonoBehaviour, IDamageable
 
     private void UpdateSprintAndAimState()
     {
-        Vector2 move = _inputReader.MoveInput;
-        bool aimHeld = _inputReader.IsAiming;
-        bool sprintWanted = _inputReader.IsSprinting && move.y > 0.1f && _characterController.isGrounded;
+        Vector2 move = _inputReader != null ? _inputReader.MoveInput : Vector2.zero;
+        bool aimHeld = _inputReader != null && _inputReader.IsAiming;
+        bool sprintWanted = _inputReader != null && _inputReader.IsSprinting && move.y > 0.1f && _characterController.isGrounded;
         bool weaponCanAim = _weapon == null || _weapon.CanAim;
 
         if (sprintWanted && !_prevSprintWanted && aimHeld)
@@ -253,6 +266,7 @@ public class PlayerFPSController : MonoBehaviour, IDamageable
 
     private void HandleLook()
     {
+        if (_inputReader == null) return;
         Vector2 look = _inputReader.LookInput * _lookSensitivity;
         if (IsAiming) look *= _aimSensitivityMultiplier;
 
@@ -272,7 +286,7 @@ public class PlayerFPSController : MonoBehaviour, IDamageable
 
     private void HandleMovement()
     {
-        Vector2 move = _inputReader.MoveInput;
+        Vector2 move = _inputReader != null ? _inputReader.MoveInput : Vector2.zero;
         Vector3 wishDir = transform.right * move.x + transform.forward * move.y;
         if (wishDir.sqrMagnitude > 1f) wishDir.Normalize();
 
@@ -315,10 +329,10 @@ public class PlayerFPSController : MonoBehaviour, IDamageable
         _mainCamera.fieldOfView = fov;
 
         Vector3 targetLocalPos = _cameraDefaultLocalPos + Vector3.forward * (_aimForwardOffset * aimT);
-        
+
         if (_shakeTimer > 0f)
         {
-            Vector3 randomShake = UnityEngine.Random.insideUnitSphere * _currentShakeIntensity;
+            Vector3 randomShake = Random.insideUnitSphere * _currentShakeIntensity;
             targetLocalPos += randomShake;
             _shakeTimer -= Time.deltaTime;
         }
@@ -335,21 +349,25 @@ public class PlayerFPSController : MonoBehaviour, IDamageable
 
         if (_bloomComponent != null)
         {
-            float targetBloom = Mathf.Lerp(1f, 8f, missingHealthFactor) + (missingHealthFactor * Mathf.Sin(Time.time * 6f) * 2f);
-            _bloomComponent.intensity.value = Mathf.Lerp(_bloomComponent.intensity.value, targetBloom, Time.deltaTime * 4f);
+            float targetBloom = Mathf.Lerp(1f, 8f, missingHealthFactor) +
+                                (missingHealthFactor * Mathf.Sin(Time.time * 6f) * 2f);
+            _bloomComponent.intensity.value =
+                Mathf.Lerp(_bloomComponent.intensity.value, targetBloom, Time.deltaTime * 4f);
         }
 
         if (_lensDistortionComponent != null)
         {
             float targetDistortion = Mathf.Lerp(0f, -0.35f, missingHealthFactor);
-            _lensDistortionComponent.intensity.value = Mathf.Lerp(_lensDistortionComponent.intensity.value, targetDistortion, Time.deltaTime * 4f);
+            _lensDistortionComponent.intensity.value = Mathf.Lerp(_lensDistortionComponent.intensity.value,
+                targetDistortion, Time.deltaTime * 4f);
         }
 
         // Return to standard default vignette when alive, scale slightly with low health panic
         if (_vignetteComponent != null && !_isIntroActive)
         {
             float targetVignette = Mathf.Lerp(_defaultVignetteIntensity, 0.65f, missingHealthFactor);
-            _vignetteComponent.intensity.value = Mathf.Lerp(_vignetteComponent.intensity.value, targetVignette, Time.deltaTime * 4f);
+            _vignetteComponent.intensity.value =
+                Mathf.Lerp(_vignetteComponent.intensity.value, targetVignette, Time.deltaTime * 4f);
         }
     }
 
@@ -365,7 +383,7 @@ public class PlayerFPSController : MonoBehaviour, IDamageable
         // Play random hit audio clip
         if (_sfxAudioSource != null && _hitAudioClips != null && _hitAudioClips.Length > 0)
         {
-            AudioClip clip = _hitAudioClips[UnityEngine.Random.Range(0, _hitAudioClips.Length)];
+            AudioClip clip = _hitAudioClips[Random.Range(0, _hitAudioClips.Length)];
             _sfxAudioSource.PlayOneShot(clip);
         }
 
@@ -380,7 +398,7 @@ public class PlayerFPSController : MonoBehaviour, IDamageable
         // Camera Shake
         float healthNormalized = _playerHealth != null ? Mathf.Clamp01(_playerHealth.Current / _playerHealth.Max) : 1f;
         float lowHealthMultiplier = Mathf.Lerp(2.5f, 0.8f, healthNormalized);
-        
+
         _currentShakeIntensity = _damageShakeBaseIntensity * lowHealthMultiplier;
         _shakeTimer = _damageShakeDuration;
 
@@ -410,7 +428,8 @@ public class PlayerFPSController : MonoBehaviour, IDamageable
         Quaternion initialPivotRotation = _cameraPivot.localRotation;
         Quaternion targetPivotRotation = initialPivotRotation * Quaternion.Euler(45f, 0f, 25f); // Fall / tilt over
 
-        float startVignette = _vignetteComponent != null ? _vignetteComponent.intensity.value : _defaultVignetteIntensity;
+        float startVignette =
+            _vignetteComponent != null ? _vignetteComponent.intensity.value : _defaultVignetteIntensity;
 
         while (elapsed < _deathSequenceDuration)
         {
@@ -418,7 +437,8 @@ public class PlayerFPSController : MonoBehaviour, IDamageable
             float t = elapsed / _deathSequenceDuration;
 
             // Tilt camera/eyes down (falling effect)
-            _cameraPivot.localRotation = Quaternion.Slerp(initialPivotRotation, targetPivotRotation, Mathf.SmoothStep(0f, 1f, t));
+            _cameraPivot.localRotation =
+                Quaternion.Slerp(initialPivotRotation, targetPivotRotation, Mathf.SmoothStep(0f, 1f, t));
 
             // Close eyes completely (vignette to 1.0)
             if (_vignetteComponent != null)

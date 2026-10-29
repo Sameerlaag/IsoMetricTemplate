@@ -17,6 +17,16 @@ public class DPSMainMenuController : MonoBehaviour
     [SerializeField] private string _startText = "Start";
     [SerializeField] private string _resumeText = "Resume";
 
+    [Header("Neon & Background Pulse Effect")]
+    [SerializeField] private Graphic[] _neonElements; // Assign UI elements (images/texts) you want to pulse with neon color
+    [SerializeField] private TMP_Text[] _neonTextMeshPros; // Assign TextMeshPro components for neon glow styling
+    [SerializeField] private Image _backgroundPiece; // The background image element whose opacity you want to animate
+    [SerializeField, Range(0f, 1f)] private float _backgroundAlphaMin = 0.2f; // Value X (min opacity)
+    [SerializeField, Range(0f, 1f)] private float _backgroundAlphaMax = 0.8f; // Value Y (max opacity)
+    [SerializeField] private Color _neonColorA = new Color(0f, 1f, 0.8f, 1f); // e.g., Cyan neon
+    [SerializeField] private Color _neonColorB = new Color(1f, 0.08f, 0.58f, 1f); // e.g., Hot pink neon
+    [SerializeField, Min(0.1f)] private float _pulseSpeed = 2f; // Speed of the neon/background pulse rhythm
+
     [Header("Audio Settings")] 
     [SerializeField] private AudioMixer _audioMixer;
     [SerializeField] private string _audioMixerParameter = "MasterVolume";
@@ -52,6 +62,50 @@ public class DPSMainMenuController : MonoBehaviour
         }
 
         SetPausedState(DPSGameManager.Instance != null && DPSGameManager.Instance.IsPaused);
+    }
+
+    private void Update()
+    {
+        // Calculate a shared pulse rhythm (0 to 1 loop using sine wave scaled by unscaledTime so it works when paused)
+        float pulse = (Mathf.Sin(Time.unscaledTime * _pulseSpeed * Mathf.PI) + 1f) * 0.5f;
+
+        // 1. Update background opacity between min (X) and max (Y)
+        if (_backgroundPiece != null)
+        {
+            Color bgCol = _backgroundPiece.color;
+            bgCol.a = Mathf.Lerp(_backgroundAlphaMin, _backgroundAlphaMax, pulse);
+            _backgroundPiece.color = bgCol;
+        }
+
+        // 2. Animate Standard UI Neon Elements (Image/Text tint color shifting or glowing)
+        Color currentNeonColor = Color.Lerp(_neonColorA, _neonColorB, pulse);
+        
+        if (_neonElements != null)
+        {
+            foreach (var graphic in _neonElements)
+            {
+                if (graphic != null)
+                {
+                    graphic.color = currentNeonColor;
+                }
+            }
+        }
+
+        // 3. Animate TextMeshPro elements (supports face color and glowing setup)
+        if (_neonTextMeshPros != null)
+        {
+            foreach (var tmpText in _neonTextMeshPros)
+            {
+                if (tmpText != null)
+                {
+                    tmpText.color = currentNeonColor;
+                    
+                    // Optional: If you enable material glow properties on your TMP shader, 
+                    // you can sync the glow intensity here as well:
+                    // tmpText.fontSharedMaterial.SetFloat(ShaderUtilities.ID_GlowPower, pulse * 0.5f);
+                }
+            }
+        }
     }
 
     public void SetPausedState(bool isPaused)

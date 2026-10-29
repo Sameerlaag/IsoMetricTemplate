@@ -5,7 +5,6 @@ public class FlashlightController : MonoBehaviour
 {
     [Header("Lights")] [SerializeField] private Light mainLight;
     [SerializeField] private Light longRangeLight;
-    [SerializeField] private Light gunLight;
 
     [Header("Input")] [SerializeField] private KeyCode toggleKey = KeyCode.F;
     [SerializeField] private bool useKeyboardInput = true;
@@ -26,7 +25,7 @@ public class FlashlightController : MonoBehaviour
 
     [SerializeField] private float farDistance = 30f;
     [SerializeField] private float minLongRangeIntensity = 0f;
-    [SerializeField] private float maxLongRangeIntensity = 3f;
+    [SerializeField] private float maxLongRangeIntensity = 200f;
     [SerializeField] private float intensitySmoothSpeed = 5f;
 
     [Header("Random Flicker")] [SerializeField]
@@ -288,9 +287,7 @@ public class FlashlightController : MonoBehaviour
         if (mainLight != null)
         {
             mainLight.enabled = isOn;
-            mainLight.intensity = isOn
-                ? nextLongRangeIntensity
-                : 0f;
+
         }
 
         if (longRangeLight != null)
@@ -299,11 +296,6 @@ public class FlashlightController : MonoBehaviour
             longRangeLight.intensity = isOn
                 ? nextLongRangeIntensity
                 : 0f;
-        }
-
-        if (gunLight != null)
-        {
-            gunLight.enabled = isOn;
         }
     }
 

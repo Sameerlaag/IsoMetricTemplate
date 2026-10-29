@@ -179,6 +179,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DPSGameManager
   _gameSceneName: DoomFps
   _mainMenuSceneName: DoomMainMenu
+  _inputReader: {fileID: 11400000, guid: 359dbc368554d1249a72766908880303, type: 2}
 --- !u!1 &892438757214768158
 GameObject:
   m_ObjectHideFlags: 0
